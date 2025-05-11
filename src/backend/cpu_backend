@@ -1,0 +1,155 @@
+#include <cmath>
+#include "backend.hpp"
+
+CBackend::CBackend() {};
+
+CBackend::~CBackend() {};
+
+/*  TODO Softmax加速执行
+    softmax: 将实数向量转换为概率分布
+    (1) sum = e^(x[0]) + e^(x[1]) + ... + e^(x[n-1])
+    (2) x[0] = (e^x[0]) / sum, 
+        x[1] = (e^x[1]) / sum, 
+        ......,
+        x[n-1] = (e^x[n-1]) / sum
+*/
+
+void CBackend::softmax(float* x, int n) {
+    if (n <= 0 || x == nullptr) return;
+
+    // 为了数值稳定性，先减去最大值
+    float max_val = x[0];
+    for (int i = 1; i < n; ++i) {
+        if (x[i] > max_val) max_val = x[i];
+    }
+
+    // 计算 e^(x[i] - max_val) 和 sum
+    float sum = 0.0f;
+    for (int i = 0; i < n; ++i) {
+        x[i] = std::exp(x[i] - max_val);
+        sum += x[i];
+    }
+
+    // 归一化
+    for (int i = 0; i < n; ++i) {
+        x[i] /= sum;
+    }
+}
+
+
+/*  TODO 矩阵向量乘法加速执行  
+    matmul: 矩阵-向量乘 
+        o[d][1] = w[d][n] X x[n][1]
+*/
+void CBackend::matmul(float* o, float* x, float* w, int n, int d) {
+    // o[d] = w[d][0] * x[0] + w[d][1] * x[1] + ... + w[d][n-1] * x[n-1]
+    
+    // 遍历矩阵的每一行 d
+    for (int i = 0; i < d; ++i) {
+        float sum = 0.0f;
+        
+        // 对矩阵的每一列 n 进行求和
+        for (int j = 0; j < n; ++j) {
+            sum += w[i * n + j] * x[j];  // w[i][j] 对应的内存位置是 w[i * n + j]
+        }
+        
+        // 将求和结果存入输出向量 o[i]
+        o[i] = sum;
+    }
+}
+
+/*  TODO RMSnorm加速执行
+    rmsnorm: 归一化
+    (1) squareSum = (x[0]*x[0] + x[1]*x[1] + ... + x[n-1]*x[n-1])/n + 1e-5f
+    (2) y[0] = w[0] * (x[0] / sqrt(squareSum)),
+        ......, 
+        y[n-1] = w[n-1] * (x[n-1] / sqrt(squareSum))
+*/
+void CBackend::rmsnorm(float* y, float* x, float* w, int n) {
+    if (n <= 0 || x == nullptr || y == nullptr || w == nullptr) return;
+
+    // (1) 计算 squareSum
+    float squareSum = 0.0f;
+    for (int i = 0; i < n; ++i) {
+        squareSum += x[i] * x[i];
+    }
+    squareSum = squareSum / n + 1e-5f;
+
+    // (2) 计算 y[i] = w[i] * (x[i] / sqrt(squareSum))
+    float normFactor = std::sqrt(squareSum);
+    for (int i = 0; i < n; ++i) {
+        y[i] = w[i] * (x[i] / normFactor);
+    }
+}
+
+/*  TODO axpy加速执行 
+    axpy: 标量和向量相乘
+    y[0] = x[0] * factor, 
+    y[1] = x[1] * factor, 
+    ......, 
+    y[dim-1] = x[dim-1] * factor
+*/
+
+void CBackend::axpy(float *y, float *x, float factor, int dim) {
+    if (dim <= 0 || x == nullptr || y == nullptr) return;
+
+    for (int i = 0; i < dim; ++i) {
+        y[i] += x[i] * factor;
+    }
+}
+
+
+/*  TODO 向量点积加速执行
+    dot: 向量点积
+    *y += x1[0]*x2[0] + x1[1]*x2[1] + ... + x1[dim-1]*x2[dim-1]
+*/
+void CBackend::dot(float *y, float *x1, float* x2, int dim) {
+    if (dim <= 0 || x1 == nullptr || x2 == nullptr || y == nullptr) return;
+
+    for (int i = 0; i < dim; ++i) {
+        *y += x1[i] * x2[i];
+    }
+}
+
+void CBackend::ropeEncoding(float *q, float *k, int headSize, int position, int dim, int kvDim) {
+    for (int i = 0; i < dim; i+=2) {
+        int headDim = i % headSize;
+        float freq = 1.0f / powf(10000.0f, headDim / (float)headSize);
+        float val = position * freq;
+        float fcr = cosf(val);
+        float fci = sinf(val);
+        int rotn = i < kvDim ? 2 : 1; 
+        for (int v = 0; v < rotn; v++) {
+            float *vec = v == 0 ? q : k;
+            float v0 = vec[i];
+            float v1 = vec[i+1];
+            vec[i]   = v0 * fcr - v1 * fci;
+            vec[i+1] = v0 * fci + v1 * fcr;
+        }
+    }
+}
+void CBackend::gemvQkSeq(float *q, float *key, float *attentionScores, int pos, int kvDim, int headSize) {
+    for (int timestep = 0; timestep <= pos; timestep++) {
+        float* k = key + timestep * kvDim;
+        float score = 0.0f;
+        dot(&score, q, k, headSize);
+        score /= sqrtf(headSize);
+        attentionScores[timestep] = score;
+    }
+}
+
+void CBackend::weightedV(float *headOutput, float *value, float *attentionScores, int pos, int kvDim, int headSize) {
+    for (int t = 0; t <= pos; t++) {
+        float *v = value + t * kvDim;
+        float a = attentionScores[t];
+        axpy(headOutput, v, a, headSize);
+    }
+}
+void CBackend::swiGLLUFunc(float *headOutput, float *value, int hiddenDim) {
+    for (int i = 0; i < hiddenDim; i++) {
+        float val = headOutput[i];
+        val *= (1.0f / (1.0f + expf(-val)));
+        val *= value[i];
+        headOutput[i] = val;
+    }
+}

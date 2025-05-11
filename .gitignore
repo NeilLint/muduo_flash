@@ -1,0 +1,91 @@
+# 编译产物
+*.out
+*.o
+*.obj
+*.lo
+*.la
+*.al
+*.libs
+*.so
+*.so.*
+*.dll
+*.dylib
+*.exe
+*.app
+
+# 静态库 & 动态库
+*.a
+*.lib
+
+# CMake 生成的文件夹
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+
+# 编译目录
+build/
+bin/
+lib/
+
+# 日志文件
+*.log
+
+# 临时文件
+*.tmp
+*.swp
+*.swo
+*~
+
+# Visual Studio 文件
+*.vcxproj*
+*.sln
+*.pdb
+*.ipch
+*.aps
+*.ncb
+*.user
+*.opensdf
+*.sdf
+*.cachefile
+
+# CLion / JetBrains IDE
+.idea/
+cmake-build-*/
+
+# Xcode
+*.xcworkspace
+*.xcuserstate
+*.xcuserdata/
+DerivedData/
+
+# Qt Creator
+*.pro.user*
+*.qmake.stash
+*.qmake.cache
+
+# VS Code
+.vscode/
+
+# Mac 系统文件
+.DS_Store
+
+# Windows 缓存文件
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# 数据文件
+/data/
+
+# 输出二进制文件
+muduo
+
+# 内核转储文件
+core
+core.*
+core.[0-9]*
+core.[0-9][0-9]*
+
+# 历史文件
+.history/
