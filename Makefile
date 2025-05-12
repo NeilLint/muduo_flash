@@ -25,7 +25,7 @@ DEPS = $(OBJS:.o=.d)
 HIPCC = hipcc
 
 # 基础编译参数
-CXXFLAGS = -O3 -std=c++17 -Wall -Wextra \
+CXXFLAGS = -O2 -std=c++17 -Wall -Wextra \
            -I. \
            -I$(SRC_DIR)/model \
            -I$(SRC_DIR)/backend \

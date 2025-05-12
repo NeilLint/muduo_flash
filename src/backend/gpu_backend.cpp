@@ -672,152 +672,199 @@ void GPU_Backend::flash_attention_gpu_step(
     int seq_len,
     hipStream_t stream
 ) {
-    // 检查内存大小
-    size_t q_size = GPU_Backend::NUM_HEADS * GPU_Backend::HEAD_SIZE * sizeof(float);
-    size_t k_cache_size = GPU_Backend::MAX_SEQ_LEN * GPU_Backend::NUM_HEADS * GPU_Backend::HEAD_SIZE * sizeof(float);
-    size_t scores_size = GPU_Backend::NUM_HEADS * GPU_Backend::MAX_SEQ_LEN * sizeof(float);
-    
-    // 检查内存分配是否足够
-    if (q_size > 3072 || k_cache_size > 37748736 || scores_size > 49152) {
-        fprintf(stderr, "Error: Memory allocation too small for the operation\n");
-        return;
-    }
-    
     // 使用指定的流或默认流
     hipStream_t useStream = stream ? stream : this->stream;
     
-    // 计算QK点积 - 使用改进的内核
-    dim3 block_qk(GPU_Backend::BLOCK_SIZE);
-    dim3 grid_qk((GPU_Backend::NUM_HEADS * seq_len + GPU_Backend::BLOCK_SIZE - 1) / GPU_Backend::BLOCK_SIZE);
-    compute_qk_kernel<<<grid_qk, block_qk, 0, useStream>>>(q, k_cache, scores, seq_len, GPU_Backend::HEAD_SIZE);
+    // 优化的Flash Attention实现
+    const int BLOCK_SIZE = 256;  // 更大的块大小提高并行度
+    const int HEAD_SIZE = GPU_Backend::HEAD_SIZE;
+    const int NUM_HEADS = GPU_Backend::NUM_HEADS;
     
-    // 添加显式同步点，确保QK计算完成
-    HIP_CHECK(hipStreamSynchronize(useStream));
+    // 1. 计算QK点积和Softmax
+    // 每个block处理一个注意力头
+    dim3 grid_qk(NUM_HEADS);
+    dim3 block_qk(BLOCK_SIZE);
     
-    // 计算softmax - 使用改进的内核，确保结果一致性
-    dim3 block_softmax(GPU_Backend::BLOCK_SIZE);
-    dim3 grid_softmax(GPU_Backend::NUM_HEADS);
-    // 需要为两个数组分配共享内存：最大值和总和
-    size_t softmax_shared_mem = 2 * GPU_Backend::BLOCK_SIZE * sizeof(float);
-    compute_softmax_kernel<<<grid_softmax, block_softmax, softmax_shared_mem, useStream>>>(scores, attn, seq_len);
+    // 共享内存大小计算
+    size_t shmem_size_qk = 2 * BLOCK_SIZE * sizeof(float);  // 用于Softmax计算
     
-    // 添加显式同步点，确保softmax计算完成
-    HIP_CHECK(hipStreamSynchronize(useStream));
+    // 计算QK点积并应用Softmax
+    optimized_flash_qk_kernel<<<grid_qk, block_qk, shmem_size_qk, useStream>>>(
+        q, k_cache, scores, attn, seq_len, HEAD_SIZE, NUM_HEADS
+    );
     
-    // 计算最终输出 - 使用改进的内核
-    dim3 block_output(GPU_Backend::BLOCK_SIZE);
-    dim3 grid_output(GPU_Backend::NUM_HEADS);
-    // 不需要共享内存
-    compute_output_kernel<<<grid_output, block_output, 0, useStream>>>(attn, v_cache, output, seq_len, GPU_Backend::HEAD_SIZE);
+    // 确保QK计算完成
+    HIP_CHECK(hipGetLastError());
     
-    // 等待所有操作完成
-    HIP_CHECK(hipStreamSynchronize(useStream));
+    // 2. 计算最终输出
+    // 每个block处理一个注意力头的所有特征
+    dim3 grid_output(NUM_HEADS);
+    dim3 block_output(min(256, HEAD_SIZE));  // 适应头大小
+    
+    // 使用优化后的内核计算输出
+    optimized_flash_output_kernel<<<grid_output, block_output, 0, useStream>>>(
+        attn, v_cache, output, seq_len, HEAD_SIZE, NUM_HEADS
+    );
+    
+    // 检查错误但不强制同步
+    HIP_CHECK(hipGetLastError());
 }
 
-__global__ void compute_qk_kernel(float* q, float* k_cache, float* scores, int seq_len, int head_size) {
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    int head_idx = tid / seq_len;
-    int pos = tid % seq_len;
-    
-    if (head_idx >= GPU_Backend::NUM_HEADS || pos >= seq_len) return;
-    
-    // 使用double精度进行计算，减少累计误差
-    double score = 0.0;
-    for (int i = 0; i < head_size; i++) {
-        score += (double)q[head_idx * head_size + i] * (double)k_cache[pos * GPU_Backend::NUM_HEADS * head_size + head_idx * head_size + i];
-    }
-    // 使用double精度的sqrt，然后再转回float
-    score /= sqrt((double)head_size);
-    scores[head_idx * seq_len + pos] = (float)score;
-}
-
-__global__ void compute_softmax_kernel(float* scores, float* attn, int seq_len) {
-    // 使用共享内存和同步原语改进的softmax计算
-    extern __shared__ float s_data[];
-    float* s_max = s_data;                   // 用于存储最大值
-    float* s_sum = &s_data[blockDim.x];      // 用于存储和
-    
+// 优化的QK计算和Softmax内核
+__global__ void optimized_flash_qk_kernel(
+    const float* __restrict__ q,
+    const float* __restrict__ k_cache,
+    float* __restrict__ scores,
+    float* __restrict__ attn,
+    int seq_len,
+    int head_size,
+    int num_heads
+) {
+    // 获取头索引
     int head_idx = blockIdx.x;
-    if (head_idx >= GPU_Backend::NUM_HEADS) return;
     
-    // 每个线程初始化为最小值
-    float thread_max = -INFINITY;
+    // 获取当前线程在块内的索引
+    int tid = threadIdx.x;
     
-    // 第一阶段：找出最大值
-    for (int i = threadIdx.x; i < seq_len; i += blockDim.x) {
-        thread_max = max(thread_max, scores[head_idx * seq_len + i]);
+    // 共享内存
+    extern __shared__ float s_data[];
+    float* s_max = s_data;                  // 最大值
+    float* s_sum = &s_data[blockDim.x];     // 总和
+    
+    // 确保只有有效的线程参与计算
+    if (head_idx >= num_heads) return;
+    
+    // 访问当前头的q向量 - 现在存储在寄存器中
+    const float* q_head = q + head_idx * head_size;
+    
+    // 缩放因子
+    const float scale = 1.0f / sqrtf((float)head_size);
+    
+    // 计算分数并找到最大值
+    float thread_max = -FLT_MAX;
+    
+    // 计算 QK 点积 (批处理方式)
+    for (int i = tid; i < seq_len; i += blockDim.x) {
+        float score = 0.0f;
+        
+        // 计算点积
+        for (int d = 0; d < head_size; d++) {
+            score += q_head[d] * k_cache[i * num_heads * head_size + head_idx * head_size + d];
+        }
+        
+        // 应用缩放
+        score *= scale;
+        
+        // 保存分数
+        scores[head_idx * seq_len + i] = score;
+        
+        // 更新线程局部最大值
+        thread_max = fmaxf(thread_max, score);
     }
     
-    // 共享内存中存储线程的最大值
-    s_max[threadIdx.x] = thread_max;
+    // 规约找出全局最大值
+    s_max[tid] = thread_max;
     __syncthreads();
     
-    // 规约找出块内最大值
-    for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
-        if (threadIdx.x < stride) {
-            s_max[threadIdx.x] = max(s_max[threadIdx.x], s_max[threadIdx.x + stride]);
+    // 归约最大值 (效率高的二进制树规约)
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (tid < s) {
+            s_max[tid] = fmaxf(s_max[tid], s_max[tid + s]);
         }
         __syncthreads();
     }
     
-    // 现在s_max[0]包含块内的最大值
+    // 所有线程获取最大值
     float max_val = s_max[0];
-    __syncthreads();
     
-    // 第二阶段：计算指数和总和
+    // 计算指数和总和
     float thread_sum = 0.0f;
     
-    for (int i = threadIdx.x; i < seq_len; i += blockDim.x) {
-        float exp_val = expf(scores[head_idx * seq_len + i] - max_val);
-        attn[head_idx * seq_len + i] = exp_val; // 存储中间结果
+    for (int i = tid; i < seq_len; i += blockDim.x) {
+        float score = scores[head_idx * seq_len + i];
+        float exp_val = expf(score - max_val);
+        
+        // 存储中间结果
+        attn[head_idx * seq_len + i] = exp_val;
+        
+        // 累加本地和
         thread_sum += exp_val;
     }
     
-    // 在共享内存中存储线程的部分和
-    s_sum[threadIdx.x] = thread_sum;
+    // 规约计算总和
+    s_sum[tid] = thread_sum;
     __syncthreads();
     
-    // 规约计算总和
-    for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
-        if (threadIdx.x < stride) {
-            s_sum[threadIdx.x] += s_sum[threadIdx.x + stride];
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (tid < s) {
+            s_sum[tid] += s_sum[tid + s];
         }
         __syncthreads();
     }
     
-    // 现在s_sum[0]包含总和
+    // 获取总和
     float sum = s_sum[0];
-    __syncthreads();
     
-    // 第三阶段：归一化
-    for (int i = threadIdx.x; i < seq_len; i += blockDim.x) {
-        // 确保和不为零
+    // 归一化
+    for (int i = tid; i < seq_len; i += blockDim.x) {
         if (sum > 0.0f) {
             attn[head_idx * seq_len + i] /= sum;
         } else {
-            // 如果和为零，均匀分布注意力
             attn[head_idx * seq_len + i] = 1.0f / seq_len;
         }
     }
 }
 
-__global__ void compute_output_kernel(float* attn, float* v_cache, float* output, int seq_len, int head_size) {
-    // 不需要共享内存，直接使用寄存器进行累加
+// 优化的输出计算内核
+__global__ void optimized_flash_output_kernel(
+    const float* __restrict__ attn,
+    const float* __restrict__ v_cache,
+    float* __restrict__ output,
+    int seq_len,
+    int head_size,
+    int num_heads
+) {
+    // 获取当前头索引
     int head_idx = blockIdx.x;
-    int tid = threadIdx.x;
     
-    if (head_idx >= GPU_Backend::NUM_HEADS || tid >= head_size) return;
+    // 获取特征维度索引
+    int feat_idx = threadIdx.x;
     
-    // 每个线程计算一个输出元素
-    double sum = 0.0;  // 使用double提高精度
+    // 确保有效范围
+    if (head_idx >= num_heads || feat_idx >= head_size) return;
     
+    // 初始化输出累加器
+    float acc = 0.0f;
+    
+    // 累加加权的V值
     for (int i = 0; i < seq_len; i++) {
-        sum += (double)attn[head_idx * seq_len + i] * 
-               (double)v_cache[i * GPU_Backend::NUM_HEADS * head_size + head_idx * head_size + tid];
+        float a = attn[head_idx * seq_len + i];
+        float v = v_cache[i * num_heads * head_size + head_idx * head_size + feat_idx];
+        acc += a * v;
     }
     
-    // 直接写入输出
-    output[head_idx * head_size + tid] = (float)sum;
+    // 写入最终结果
+    output[head_idx * head_size + feat_idx] = acc;
 }
+
+// 添加内核函数声明
+__global__ void optimized_flash_qk_kernel(
+    const float* __restrict__ q,
+    const float* __restrict__ k_cache,
+    float* __restrict__ scores,
+    float* __restrict__ attn,
+    int seq_len,
+    int head_size,
+    int num_heads
+);
+
+__global__ void optimized_flash_output_kernel(
+    const float* __restrict__ attn,
+    const float* __restrict__ v_cache,
+    float* __restrict__ output,
+    int seq_len,
+    int head_size,
+    int num_heads
+);
 
 

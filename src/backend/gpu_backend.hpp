@@ -4,9 +4,24 @@
 #include <hipblas.h>
 
 // Kernel函数声明
-__global__ void compute_qk_kernel(float* q, float* k_cache, float* scores, int seq_len, int head_size);
-__global__ void compute_softmax_kernel(float* scores, float* attn, int seq_len);
-__global__ void compute_output_kernel(float* attn, float* v_cache, float* output, int seq_len, int head_size);
+__global__ void optimized_flash_qk_kernel(
+    const float* __restrict__ q,
+    const float* __restrict__ k_cache,
+    float* __restrict__ scores,
+    float* __restrict__ attn,
+    int seq_len,
+    int head_size,
+    int num_heads
+);
+
+__global__ void optimized_flash_output_kernel(
+    const float* __restrict__ attn,
+    const float* __restrict__ v_cache,
+    float* __restrict__ output,
+    int seq_len,
+    int head_size,
+    int num_heads
+);
 
 class GPU_Backend {
 private:
