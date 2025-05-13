@@ -30,62 +30,7 @@
 }
 
 
-/*
- * Softmax 计算内核 (原地修改版本)
- * 从 data 读取原始值，计算后将结果写回 data
- * 假设一个块处理整个向量。
- * blockDim.x 最好是 2 的幂。
- */
-__global__ void softmax_kernel_inplace(float* data, int size) {
-    // 用于规约的共享内存 (最大值和指数和)
-    extern __shared__ float s_data[];
 
-    int tid = threadIdx.x;          // 块内线程 ID
-    int block_size = blockDim.x;    // 块中的线程数
-
-    // --- 阶段 1: 查找最大值 ---
-    float thread_max = -FLT_MAX;
-    for (int i = tid; i < size; i += block_size) {
-        thread_max = fmaxf(thread_max, data[i]); // 从 data 读取
-    }
-    s_data[tid] = thread_max;
-    __syncthreads();
-    for (int s = block_size / 2; s > 0; s >>= 1) {
-        if (tid < s) {
-            s_data[tid] = fmaxf(s_data[tid], s_data[tid + s]);
-        }
-        __syncthreads();
-    }
-    float block_max = s_data[0];
-    __syncthreads();
-
-    // --- 阶段 2: 计算指数和 ---
-    float thread_sum_exp = 0.0f;
-    for (int i = tid; i < size; i += block_size) {
-        thread_sum_exp += expf(data[i] - block_max); // 从 data 读取
-    }
-    s_data[tid] = thread_sum_exp;
-    __syncthreads();
-    for (int s = block_size / 2; s > 0; s >>= 1) {
-        if (tid < s) {
-            s_data[tid] += s_data[tid + s];
-        }
-        __syncthreads();
-    }
-    float block_sum_exp = s_data[0];
-    __syncthreads();
-
-    // --- 阶段 3: 归一化并写回输出 (原地修改) ---
-    for (int i = tid; i < size; i += block_size) {
-        float exp_val = expf(data[i] - block_max); // 从 data 读取原始值相关的计算
-        if (block_sum_exp > 0.0f) {
-             data[i] = exp_val / block_sum_exp; // 将结果写回 data
-        } else {
-             data[i] = 0.0f; // 处理 sum 为 0 的情况
-             // 或者 data[i] = 1.0f / (float)size;
-        }
-    }
-}
 
 // RMSNorm 内核 (单核实现, 假设 size 适合单块处理)
 // 计算 o[i] = (x[i] / sqrt(sum(x^2)/size + eps)) * weight[i]
@@ -160,9 +105,6 @@ GPU_Backend::GPU_Backend() : blas_handle(nullptr), stream(nullptr) {
     HIPBLAS_CHECK(hipblasSetPointerMode(blas_handle, HIPBLAS_POINTER_MODE_HOST));
     
     // printf("GPU_Backend initialized with HIP stream and hipBLAS handle.\n");
-    for (int i = 0; i < NUM_STREAMS; i++) {
-        HIP_CHECK(hipStreamCreate(&streams[i]));
-    }
 }
 
 GPU_Backend::~GPU_Backend() {
@@ -172,9 +114,6 @@ GPU_Backend::~GPU_Backend() {
         blas_handle = nullptr;
     }
     // printf("GPU_Backend destroyed, hipBLAS handle and HIP stream released.\n");
-    for (int i = 0; i < NUM_STREAMS; i++) {
-        HIP_CHECK(hipStreamDestroy(streams[i]));
-    }
 }
 
 // 同步方法：等待所有GPU操作完成
@@ -184,39 +123,6 @@ void GPU_Backend::synchronize() {
     }
 }
 
-/*  TODO Softmax加速执行
-    softmax: 将实数向量转换为概率分布
-    (1) sum = e^(x[0]) + e^(x[1]) + ... + e^(x[n-1])
-    (2) x[0] = (e^x[0]) / sum, 
-        x[1] = (e^x[1]) / sum, 
-        ......,
-        x[n-1] = (e^x[n-1]) / sum
-*/
-
-void GPU_Backend::softmax(float* d_data, int size, hipStream_t stream) {
-        // 输入验证 (可选，但推荐)
-        if (d_data == nullptr || size <= 0) {
-            fprintf(stderr, "错误：设备指针为空或大小无效。\n");
-            // 可能需要更健壮的错误处理，例如返回错误码
-            return;
-        }
-        // 如果未指定流，则使用类的默认流
-        hipStream_t useStream = stream ? stream : this->stream;
-
-        // 3. 配置内核启动参数 (与之前类似)
-        int block_size = 256;
-        // block_size = (size < block_size) ? nextPowerOf2(size) : block_size; // 精细调整
-
-        dim3 gridDim(1); // 仍然使用一个块处理
-        dim3 blockDim(block_size);
-        // 共享内存大小，取决于 softmax_kernel_inplace 的实现
-        size_t shared_mem_size = block_size * sizeof(float);
-
-        // 4. 启动原地修改内核，使用指定的流
-        hipLaunchKernelGGL(softmax_kernel_inplace, gridDim, blockDim, shared_mem_size, useStream, d_data, size);
-        HIP_CHECK(hipGetLastError()); // 检查内核启动错误
-        // 不再显式同步，由调用者决定何时同步
-    }
 // 假设 CHECK 和 HIPBLAS_CHECK 宏已定义
 
 // --- 重构后的 matmul 函数 ---
@@ -238,7 +144,8 @@ void GPU_Backend::matmul(float* o_d,           // 指向 GPU 上的输出向量 
     }
     // 如果传入了非默认流，则设置流
     if (stream != nullptr) {
-        HIPBLAS_CHECK(hipblasSetStream(blas_handle, stream));
+        // printf("matmul stream 流切换\n");
+        // HIPBLAS_CHECK(hipblasSetStream(blas_handle, stream));
     }
 
     const float alpha = 1.0f;
@@ -481,153 +388,8 @@ void GPU_Backend::ropeEncoding(float *q, float *k,
 
 
 
-void GPU_Backend::gemvQkSeq(float *q, float *key, float *scores, int pos, int kvDim, int headSize, hipStream_t stream) {
-        if (pos < 0 || !q || !key || !scores || kvDim <= 0 || headSize <= 0 || !blas_handle) {
-            fprintf(stderr, "gemvQkSeq Error: Invalid inputs (pos=%d, kvDim=%d, headSize=%d, handles=%p)\n", 
-                    pos, kvDim, headSize, blas_handle);
-            return;
-        }
-        // 确保pos >= 0，num至少为1
-        int num = pos + 1;
-        
-        // 如果未指定流，则使用类的默认流
-        hipStream_t useStream = stream ? stream : this->stream;
-        
-        // 将hipBLAS句柄与指定的流关联
-        HIPBLAS_CHECK(hipblasSetStream(blas_handle, useStream));
-        
-        const float alpha = 1.0f / std::sqrt((float)headSize);
-        const float beta  = 0.0f;
-        
-        // 检查指针有效性
-        if (!q || !key || !scores) {
-            fprintf(stderr, "gemvQkSeq Error: Null pointers detected (q=%p, key=%p, scores=%p)\n", q, key, scores);
-            return;
-        }
-        
-        // 检查LDA是否符合要求
-        // 对于HIPBLAS_OP_T操作，主维度lda必须 >= max(1, num)，即原矩阵的行数
-        if (kvDim < headSize) {
-            fprintf(stderr, "gemvQkSeq Error: Invalid matrix dimensions (kvDim=%d < headSize=%d)\n", kvDim, headSize);
-            return;
-        }
-        
-        HIPBLAS_CHECK(hipblasSetPointerMode(blas_handle, HIPBLAS_POINTER_MODE_HOST));
-        
-        // 打印调试信息
-        // printf("gemvQkSeq: headSize=%d, num=%d, alpha=%f, key=%p, kvDim=%d, q=%p, scores=%p\n", 
-        //        headSize, num, alpha, key, kvDim, q, scores);
-        
-        
-        // 对于行主元key矩阵(num x headSize)，视为矩阵的转置
-        HIPBLAS_CHECK(hipblasSgemv(
-            blas_handle,
-            HIPBLAS_OP_T,       // 转置操作
-            headSize,           // 原矩阵列数 = 转置后行数
-            num,                // 原矩阵行数 = 转置后列数
-            &alpha,             // 缩放因子
-            key,                // key矩阵指针
-            kvDim,              // 行间距
-            q,                  // 查询向量指针
-            1,                  // 增量
-            &beta,              // 累加因子
-            scores,             // 输出分数指针
-            1                   // 增量
-        ));
-         
-        
-        
-        // 检查异步错误
-        HIP_CHECK(hipGetLastError());
-        // 不再显式同步，由调用者决定何时同步
-    }
 
 
-
-__global__ void weightedVKernel_reduction(float *headOutput, const float *value, const float *attentionScores,
-                                          int pos, int kvDim, int headSize) {
-    int tid = blockIdx.x;
-    int lane = threadIdx.x;
-
-    if (tid >= headSize) return;
-
-    extern __shared__ float partialSum[];
-
-    float sum = 0.0f;
-
-    for (int t = lane; t <= pos; t += blockDim.x) {
-        float v = value[t * kvDim + tid];
-        float a = attentionScores[t];
-        sum += a * v;
-    }
-
-    partialSum[lane] = sum;
-    __syncthreads();
-
-    // Block内归约
-    for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
-        if (lane < stride)
-            partialSum[lane] += partialSum[lane + stride];
-        __syncthreads();
-    }
-
-    if (lane == 0)
-        headOutput[tid] = partialSum[0];
-}
-
-
-
-// --- 修改后的函数 ---
-// 注意：参数名已修改，明确表示它们是设备指针或值
-// headOutput_d, value_d, attentionScores_d 现在必须是有效的 GPU 设备指针
-void GPU_Backend::weightedV(float *headOutput_d,     // 指向 GPU 上已分配的输出缓冲区的指针
-                         float *value_d,         // 指向 GPU 上已存在的 Value 缓存的指针
-                         float *attentionScores_d, // 指向 GPU 上已存在的注意力分数数组的指针
-                         int pos,                // 当前位置 (值)
-                         int kvDim,              // Key/Value 维度 (值)
-                         int headSize,           // Head 维度 (值)
-                         hipStream_t stream)     // 指定的流，可选
-{
-    // --- 1. 移除内部 GPU 内存分配 ---
-    // 不再需要: hipMalloc(&d_value, valueSize);
-    // 不再需要: hipMalloc(&d_attentionScores, scoreSize);
-    // 不再需要: hipMalloc(&d_headOutput, outputSize);
-    // 我们假设传入的 headOutput_d, value_d, attentionScores_d 已经是有效的设备指针
-    // 如果未指定流，则使用类的默认流
-    hipStream_t useStream = stream ? stream : this->stream;
-
-    // --- 2. 移除主机到设备的数据传输 ---
-    // 不再需要: hipMemcpy(d_value, value, valueSize, hipMemcpyHostToDevice);
-    // 不再需要: hipMemcpy(d_attentionScores, attentionScores, scoreSize, hipMemcpyHostToDevice);
-    // 假设数据已在 GPU 上
-
-    // --- 3. 配置并启动 GPU 内核 (保持这部分逻辑) ---
-    int blockSize = 256; // 或者根据你的 GPU 和内核进行优化调整
-    // 这个网格大小的计算 (numBlocks = headSize) 看起来特定于你的 reduction 内核
-    // 如果你的内核是每个线程计算输出的一个元素，则计算方式不同
-    // 保持原始逻辑，但需确保它与 weightedVKernel_reduction 的实现匹配
-    int numBlocks = headSize;
-    // 如果内核需要共享内存进行归约，则需要计算
-    size_t sharedMemSize = (blockSize > 0) ? blockSize * sizeof(float) : 0;
-
-    // 启动 GPU 内核，使用指定的流
-    hipLaunchKernelGGL(weightedVKernel_reduction, // 内核函数名
-                       dim3(numBlocks),           // 网格维度
-                       dim3(blockSize),           // 块维度
-                       sharedMemSize,             // 每个块的共享内存大小
-                       useStream,                 // 使用指定的流
-                       // 内核参数:
-                       headOutput_d,         // 使用传入的设备指针
-                       value_d,              // 使用传入的设备指针
-                       attentionScores_d,    // 使用传入的设备指针
-                       pos,                  // 传递值
-                       kvDim,                // 传递值
-                       headSize);            // 传递值
-
-    // 检查内核启动是否有错误 (推荐保留)
-    HIP_CHECK(hipGetLastError());
-    // 不再显式同步，由调用者决定何时同步
-}
 
 __global__ void swiGLLU_kernel(float* headOutput, const float* value, int hiddenDim) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
