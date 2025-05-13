@@ -92,10 +92,9 @@ std::tuple<std::string, int, long> GPU_Infer::generate(std::string prompt) {
     int next;                    
     int token = promptTokens[0]; 
     int pos = 0;               
-
+    float* logits = static_cast<float*>(malloc(model->config.vocabSize * sizeof(float)));
     while (pos < steps) {
-
-        float* logits = model->forward(token, pos, backend);
+        model->forward(token, pos, backend,logits);
 
         if (pos < numPromptTokens - 1) {
 
@@ -127,5 +126,6 @@ std::tuple<std::string, int, long> GPU_Infer::generate(std::string prompt) {
     }
 
     delete[] promptTokens;
+    delete[] logits;
     return std::make_tuple(result, pos - 1, elapsed);
 }

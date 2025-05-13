@@ -282,7 +282,7 @@ void GPU_Model::freeModel() {
 }
 
 
-float* GPU_Model::forward(int token, int pos, GPU_Backend *backend) {
+float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits) {
     CModelConfig* config = &this->config;
     GPU_RunState* state = &this->state;
     
@@ -310,7 +310,7 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend) {
         backend->ropeEncoding(state->d_q, state->d_k, headSize, pos, embeddingDim, kvDim, backend->getStream());
         
         // 自注意力机制后同步，确保Q、K已准备好
-        backend->synchronize();
+        // backend->synchronize();
         
         // 使用flash attention实现
         backend->flash_attention_gpu_step(
@@ -325,7 +325,7 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend) {
         );
 
         // 注意力计算后同步，确保所有头的计算都完成
-        backend->synchronize();
+        // backend->synchronize();
 
         backend->matmul(state->d_extraBuffer, state->d_branchActivation, d_w.d_wo + layer * embeddingDim * embeddingDim, embeddingDim, embeddingDim, backend->getStream());
         
@@ -340,20 +340,20 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend) {
         backend->swiGLLUFunc(state->d_hiddenBuffer, state->d_extraHiddenBuffer, ffnHiddenDim, backend->getStream());
         
         // FFN计算后同步
-        backend->synchronize();
+        // backend->synchronize();
 
         backend->matmul(state->d_branchActivation, state->d_hiddenBuffer, d_w.d_w2 + layer * ffnHiddenDim * embeddingDim, ffnHiddenDim, embeddingDim, backend->getStream());
         backend->axpy(inputVec, state->d_branchActivation, 1.f, embeddingDim, backend->getStream());
     }
 
     backend->rmsnorm(inputVec, inputVec, d_w.d_rmsFinalWeight, embeddingDim, backend->getStream());
-    backend->synchronize();
+    // backend->synchronize();
     backend->matmul(state->d_logits, inputVec, d_w.d_tokenEmbeddingTable, embeddingDim, config->vocabSize, backend->getStream());
 
     // 最终同步，确保logits已经计算完成
-    backend->synchronize();
+    // backend->synchronize();
     // 返回host端logits
-    float* logits = static_cast<float*>(malloc(config->vocabSize * sizeof(float)));
+    // 
     HIP_CHECK(hipMemcpy(logits, state->d_logits, config->vocabSize * sizeof(float), hipMemcpyDeviceToHost));
 
     return logits;

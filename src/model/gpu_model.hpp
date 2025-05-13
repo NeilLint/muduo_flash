@@ -56,7 +56,7 @@ public:
     
     void load(const std::string& checkpointPath, CModelConfig* modelConfig, int* fileDescriptor, float** data, ssize_t* totalFileSize);
     void encode(CTokenizer* t, std::string text, int8_t bos, int8_t eos, int *tokens, int *nTokens);
-    float* forward(int token, int pos, GPU_Backend *backend);
+    float* forward(int token, int pos, GPU_Backend *backend,float *logits);
     char* decode(CTokenizer* t, int prevToken, int token);
     void initializeModel(const std::string checkpointPath);
     void mapWeightsToMemory(CModelConfig* modelConfig, float* ptr, int sharedWeights);
