@@ -44,11 +44,8 @@ public:
     void copyToGPU(CRunState* cpuState, CModelConfig* config);  // 将主机内存数据复制到GPU
     void copyFromGPU(CRunState* cpuState, CModelConfig* config); // 将GPU数据复制回主机内存
     
-    // 获取GPU流的方法，以便与GPU后端集成
-    hipStream_t getStream() { return stream; }
 
 private:
-    hipStream_t stream;  // 用于异步操作的CUDA流
 };
 
 

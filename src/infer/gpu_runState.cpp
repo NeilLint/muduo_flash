@@ -6,19 +6,11 @@ GPU_RunState::GPU_RunState()
     : d_currentActivation(nullptr), d_branchActivation(nullptr), d_extraBuffer(nullptr),
       d_hiddenBuffer(nullptr), d_extraHiddenBuffer(nullptr), d_q(nullptr), d_k(nullptr),
       d_v(nullptr), d_attentionScores(nullptr), d_logits(nullptr),
-      d_keyCache(nullptr), d_valueCache(nullptr), d_scores(nullptr), d_attn(nullptr), stream(nullptr) {
+      d_keyCache(nullptr), d_valueCache(nullptr), d_scores(nullptr), d_attn(nullptr) {
     
-    // 创建CUDA流用于异步操作
-    HIP_CHECK(hipStreamCreate(&stream));
 }
 
 GPU_RunState::~GPU_RunState() {
-    // 析构函数中释放流
-    if (stream) {
-        HIP_CHECK(hipStreamDestroy(stream));
-        stream = nullptr;
-    }
-    
     // 确保所有GPU内存都已释放
     deallocateGPUMemory();
 }

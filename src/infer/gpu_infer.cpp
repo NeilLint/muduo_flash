@@ -68,7 +68,6 @@ void GPU_Infer::build(std::string modelPath,std::string tknzrPath, ModelType mt,
     tokenizer = new CTokenizer();
     sampler = new CSampler();
 	model->backend = backend;
-	backend->setStream(model->state.getStream());
     tokenizer->initializeTokenizer(tknzrPath,model->config.vocabSize);
     sampler->initializeSampler(model->config.vocabSize, temperature, topp, rngSeed);
 }

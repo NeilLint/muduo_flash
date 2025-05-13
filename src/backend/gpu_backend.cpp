@@ -142,11 +142,6 @@ void GPU_Backend::matmul(float* o_d,           // 指向 GPU 上的输出向量 
         fprintf(stderr, "GPU Matmul Error: Invalid input pointers or dimensions.\n");
         return;
     }
-    // 如果传入了非默认流，则设置流
-    if (stream != nullptr) {
-        // printf("matmul stream 流切换\n");
-        // HIPBLAS_CHECK(hipblasSetStream(blas_handle, stream));
-    }
 
     const float alpha = 1.0f;
     const float beta = 0.0f;
@@ -259,7 +254,7 @@ void GPU_Backend::axpy(float *y_d,           // 指向 GPU 上向量 y 的指针
     hipStream_t useStream = stream ? stream : this->stream;
     
     // 将hipBLAS句柄与指定的流关联
-    HIPBLAS_CHECK(hipblasSetStream(blas_handle, useStream));
+    // HIPBLAS_CHECK(hipblasSetStream(blas_handle, useStream));
 
     // --- 1. 无需分配设备内存 ---
     // --- 2. 无需主机到设备的数据传输 ---
@@ -309,7 +304,7 @@ void GPU_Backend::dot(float* d_y,       // 指向设备内存中的结果位置
         hipStream_t useStream = stream ? stream : this->stream;
         
         // 将hipBLAS句柄与指定的流关联
-        HIPBLAS_CHECK(hipblasSetStream(blas_handle, useStream));
+        // HIPBLAS_CHECK(hipblasSetStream(blas_handle, useStream));
 
         // 注意：不再需要 hipMalloc
         // 注意：不再需要 hipMemcpyHostToDevice

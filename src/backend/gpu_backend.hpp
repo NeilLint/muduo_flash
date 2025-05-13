@@ -27,7 +27,7 @@ class GPU_Backend {
 private:
     hipblasHandle_t blas_handle;     // hipBLAS handle
     hipStream_t stream;         // HIP流，用于管理内核执行顺序
-
+    
 public:
     static const int NUM_STREAMS = 4;  // 固定使用4个流
     static const int BLOCK_SIZE = 256;  // CUDA块大小
@@ -40,10 +40,6 @@ public:
 
     // 获取当前流
     hipStream_t getStream() { return stream; }
-    void setStream(hipStream_t stream) { 
-        this->stream = stream; 
-        
-    }
     // 等待所有操作完成
     void synchronize();
 
