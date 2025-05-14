@@ -113,7 +113,8 @@ int main(int argc, char* argv[]){
     for (size_t i = 0; i < prompts.size(); ++i) {
         auto [output, tokens, timeMs] = infer.generate(prompts[i]);
         if (output != responses[i]) {
-            std::cerr << "[ERROR:] Result mismatch at sample " << i + 1 << "!" << std::endl;
+            std::cerr << "[ERROR:] Result mismatch at sample " << i + 1 << "!"<< tokens << " tokens in " << timeMs << " ms, throughput = "
+                    << (tokens / (timeMs / 1000.0)) << " tokens/s" << std::endl;
         }
         else {
             std::cout << "Sample " << i+1 << " (Result Validation PASS): " << tokens << " tokens in " << timeMs << " ms, throughput = "
