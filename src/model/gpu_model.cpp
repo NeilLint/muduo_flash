@@ -30,9 +30,6 @@ GPU_Model::GPU_Model() : fd(-1), data(nullptr), fileSize(0)
     d_w.d_tokenEmbeddingTable = nullptr;
     d_w.d_rmsAttWeight = nullptr;
     d_w.d_rmsFfnWeight = nullptr;
-    d_w.d_wq = nullptr;
-    d_w.d_wk = nullptr;
-    d_w.d_wv = nullptr;
     d_w.d_wo = nullptr;
     d_w.d_w1 = nullptr;
     d_w.d_w2 = nullptr;
@@ -277,31 +274,14 @@ void GPU_Model::freeModel() {
     // 释放GPU内存
     // 释放保存在GPU上的权重
     HIP_CHECK(hipFree(d_w.d_tokenEmbeddingTable));
-    HIP_CHECK(hipFree(d_w.d_rmsAttWeight));
-    HIP_CHECK(hipFree(d_w.d_wq));
-    HIP_CHECK(hipFree(d_w.d_wk));
-    HIP_CHECK(hipFree(d_w.d_wv));
+    HIP_CHECK(hipFree(d_w.d_rmsAttWeight));    
     HIP_CHECK(hipFree(d_w.d_wo));
     HIP_CHECK(hipFree(d_w.d_w1));
     HIP_CHECK(hipFree(d_w.d_w2));
     HIP_CHECK(hipFree(d_w.d_w3));
     HIP_CHECK(hipFree(d_w.d_rmsFinalWeight));
     HIP_CHECK(hipFree(d_w.d_wcls));
-    
-    // 释放QKV投影使用的设备指针数组
-    if (d_A_array != nullptr) {
-        HIP_CHECK(hipFree(d_A_array));
-        d_A_array = nullptr;
-    }
-    if (d_B_array != nullptr) {
-        HIP_CHECK(hipFree(d_B_array));
-        d_B_array = nullptr;
-    }
-    if (d_C_array != nullptr) {
-        HIP_CHECK(hipFree(d_C_array));
-        d_C_array = nullptr;
-    }
-    
+    HIP_CHECK(hipFree(d_w.d_wqkv));
     // 释放保存在GPU上的运行状态内存
     state.deallocateGPUMemory();
 }
@@ -313,8 +293,7 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
     
     float* inputVec = state->d_currentActivation;
     const int embeddingDim = config->dim;
-    const int kvDim = (config->dim * config->numKvHeads) / config->numHeads;
-    const int kvHeadMultiplier = config->numHeads / config->numKvHeads;
+    const int kvDim = config->dim; // 当numKvHeads == numHeads时，kvDim就等于dim
     const int headSize = embeddingDim / config->numHeads;
     const int ffnHiddenDim = config->feedForwardDim;
     
@@ -329,19 +308,23 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
         state->d_k = state->d_keyCache + kvCacheOffset + pos * kvDim;
         state->d_v = state->d_valueCache + kvCacheOffset + pos * kvDim;
         
-
-        // 使用QKV投影批处理函数
-        backend->qkvProjectionBatched(
-            state->d_q, state->d_k, state->d_v,
-            state->d_branchActivation,
-            d_w.d_wq, d_w.d_wk, d_w.d_wv,
-            d_A_array,d_B_array,d_C_array,
-            embeddingDim, kvDim,
-            layer,
-            backend->getStream()
-        );
-
+        // 计算QKV权重矩阵在设备内存中的偏移
+        size_t layerOffset = layer * 3 * embeddingDim * embeddingDim;
+        
+        // 使用一次矩阵乘法同时计算Q、K、V投影
+        // 对输入向量乘以堆叠的QKV权重矩阵，得到堆叠的QKV结果
+        backend->matmul(state->d_qkv, state->d_branchActivation, d_w.d_wqkv + layerOffset, embeddingDim, embeddingDim * 3, backend->getStream());
+        
+        // 从计算结果中分别提取Q、K、V
+        HIP_CHECK(hipMemcpyAsync(state->d_q, state->d_qkv, config->dim * sizeof(float), hipMemcpyDeviceToDevice, backend->getStream()));
+        HIP_CHECK(hipMemcpyAsync(state->d_k, state->d_qkv + config->dim, config->dim * sizeof(float), hipMemcpyDeviceToDevice, backend->getStream()));
+        HIP_CHECK(hipMemcpyAsync(state->d_v, state->d_qkv + 2 * config->dim, config->dim * sizeof(float), hipMemcpyDeviceToDevice, backend->getStream()));
+        
         backend->ropeEncoding(state->d_q, state->d_k, headSize, pos, embeddingDim, kvDim, backend->getStream());
+
+        
+        // 自注意力机制后同步，确保Q、K已准备好
+        // 
         
         // 使用flash attention实现
         backend->flash_attention_gpu_step(
@@ -387,10 +370,9 @@ void GPU_Model::transferWeightsToDevice() {
     HIP_CHECK(hipMalloc(&d_w.d_tokenEmbeddingTable, config.vocabSize * config.dim * sizeof(float)));
     HIP_CHECK(hipMalloc(&d_w.d_rmsAttWeight, numLayers * config.dim * sizeof(float)));
     HIP_CHECK(hipMalloc(&d_w.d_rmsFfnWeight, numLayers * config.dim * sizeof(float)));
-    HIP_CHECK(hipMalloc(&d_w.d_wq, numLayers * config.dim * (config.numHeads * headSize) * sizeof(float)));
-    HIP_CHECK(hipMalloc(&d_w.d_wk, numLayers * config.dim * (config.numKvHeads * headSize) * sizeof(float)));
-    HIP_CHECK(hipMalloc(&d_w.d_wv, numLayers * config.dim * (config.numKvHeads * headSize) * sizeof(float)));
-    HIP_CHECK(hipMalloc(&d_w.d_wo, numLayers * (config.numHeads * headSize) * config.dim * sizeof(float)));
+    // 为QKV权重分配一个大矩阵，垂直堆叠Q、K、V
+    HIP_CHECK(hipMalloc(&d_w.d_wqkv, numLayers * 3 * config.dim * config.dim * sizeof(float)));
+    HIP_CHECK(hipMalloc(&d_w.d_wo, numLayers * config.dim * config.dim * sizeof(float)));
     HIP_CHECK(hipMalloc(&d_w.d_w1, numLayers * config.dim * config.feedForwardDim * sizeof(float)));
     HIP_CHECK(hipMalloc(&d_w.d_w2, numLayers * config.feedForwardDim * config.dim * sizeof(float)));
     HIP_CHECK(hipMalloc(&d_w.d_w3, numLayers * config.dim * config.feedForwardDim * sizeof(float)));
@@ -401,14 +383,30 @@ void GPU_Model::transferWeightsToDevice() {
     HIP_CHECK(hipMemcpy(d_w.d_tokenEmbeddingTable, h_w.tokenEmbeddingTable, config.vocabSize * config.dim * sizeof(float), hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_w.d_rmsAttWeight, h_w.rmsAttWeight, numLayers * config.dim * sizeof(float), hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_w.d_rmsFfnWeight, h_w.rmsFfnWeight, numLayers * config.dim * sizeof(float), hipMemcpyHostToDevice));
-    HIP_CHECK(hipMemcpy(d_w.d_wq, h_w.wq, numLayers * config.dim * (config.numHeads * headSize) * sizeof(float), hipMemcpyHostToDevice));
-    HIP_CHECK(hipMemcpy(d_w.d_wk, h_w.wk, numLayers * config.dim * (config.numKvHeads * headSize) * sizeof(float), hipMemcpyHostToDevice));
-    HIP_CHECK(hipMemcpy(d_w.d_wv, h_w.wv, numLayers * config.dim * (config.numKvHeads * headSize) * sizeof(float), hipMemcpyHostToDevice));
-    HIP_CHECK(hipMemcpy(d_w.d_wo, h_w.wo, numLayers * (config.numHeads * headSize) * config.dim * sizeof(float), hipMemcpyHostToDevice));
+    HIP_CHECK(hipMemcpy(d_w.d_wo, h_w.wo, numLayers * config.dim * config.dim * sizeof(float), hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_w.d_w1, h_w.w1, numLayers * config.dim * config.feedForwardDim * sizeof(float), hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_w.d_w2, h_w.w2, numLayers * config.feedForwardDim * config.dim * sizeof(float), hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_w.d_w3, h_w.w3, numLayers * config.dim * config.feedForwardDim * sizeof(float), hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_w.d_rmsFinalWeight, h_w.rmsFinalWeight, config.dim * sizeof(float), hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_w.d_wcls, h_w.wcls, config.vocabSize * sizeof(float), hipMemcpyHostToDevice));
+
+    // 将QKV权重矩阵，按照【层，q,k,v】的顺序，垂直堆叠复制到设备
+    float* h_q = nullptr, *h_k = nullptr, *h_v = nullptr;
+    const size_t matrixSize = config.dim * config.dim; // 每个矩阵的大小
+    
+    for (uint64_t layer = 0; layer < numLayers; ++layer) {
+        // 计算本层在QKV矩阵中的偏移位置
+        size_t layerOffset = layer * 3 * matrixSize;
+        
+        // 获取Q、K、V在CPU上的地址
+        h_q = h_w.wq + layer * matrixSize;
+        h_k = h_w.wk + layer * matrixSize;
+        h_v = h_w.wv + layer * matrixSize;
+        
+        // 依次复制Q、K、V到堆叠的QKV矩阵
+        HIP_CHECK(hipMemcpy(d_w.d_wqkv + layerOffset, h_q, matrixSize * sizeof(float), hipMemcpyHostToDevice));
+        HIP_CHECK(hipMemcpy(d_w.d_wqkv + layerOffset + matrixSize, h_k, matrixSize * sizeof(float), hipMemcpyHostToDevice));
+        HIP_CHECK(hipMemcpy(d_w.d_wqkv + layerOffset + 2 * matrixSize, h_v, matrixSize * sizeof(float), hipMemcpyHostToDevice));
+    }
 }
 

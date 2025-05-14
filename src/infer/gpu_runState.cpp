@@ -6,7 +6,7 @@ GPU_RunState::GPU_RunState()
     : d_currentActivation(nullptr), d_branchActivation(nullptr), d_extraBuffer(nullptr),
       d_hiddenBuffer(nullptr), d_extraHiddenBuffer(nullptr), d_q(nullptr), d_k(nullptr),
       d_v(nullptr), d_attentionScores(nullptr), d_logits(nullptr),
-      d_keyCache(nullptr), d_valueCache(nullptr), d_scores(nullptr), d_attn(nullptr) {
+      d_keyCache(nullptr), d_valueCache(nullptr), d_scores(nullptr), d_attn(nullptr), d_qkv(nullptr) {
     
 }
 
@@ -41,6 +41,7 @@ void GPU_RunState::allocateGPUMemory(CModelConfig* config) {
     HIP_CHECK(hipMalloc((void**)&d_logits, config->vocabSize * sizeof(float)));
     HIP_CHECK(hipMalloc((void**)&d_scores, config->numHeads * config->maxSeqLen * sizeof(float)));
     HIP_CHECK(hipMalloc((void**)&d_attn, config->numHeads * config->maxSeqLen * sizeof(float)));
+    HIP_CHECK(hipMalloc((void**)&d_qkv, 3 * config->dim * sizeof(float)));
 
     // 初始化GPU内存为0
     HIP_CHECK(hipMemset(d_currentActivation, 0, config->dim * sizeof(float)));
@@ -57,7 +58,7 @@ void GPU_RunState::allocateGPUMemory(CModelConfig* config) {
     HIP_CHECK(hipMemset(d_logits, 0, config->vocabSize * sizeof(float)));
     HIP_CHECK(hipMemset(d_scores, 0, config->numHeads * config->maxSeqLen * sizeof(float)));
     HIP_CHECK(hipMemset(d_attn, 0, config->numHeads * config->maxSeqLen * sizeof(float)));
-
+    HIP_CHECK(hipMemset(d_qkv, 0, 3 * config->dim * sizeof(float)));
     // std::cout << "[INFO:] GPU memory allocation successful!" << std::endl;
 }
 
@@ -76,7 +77,7 @@ void GPU_RunState::deallocateGPUMemory() {
     if (d_valueCache) { hipError_t error = hipFree(d_valueCache); d_valueCache = nullptr; }
     if (d_scores) { HIP_CHECK(hipFree(d_scores)); d_scores = nullptr; }
     if (d_attn) { HIP_CHECK(hipFree(d_attn)); d_attn = nullptr; }
-
+    // if (d_qkv) { HIP_CHECK(hipFree(d_qkv)); d_qkv = nullptr; }
     // std::cout << "[INFO:] GPU memory deallocation successful!" << std::endl;
 }
 
