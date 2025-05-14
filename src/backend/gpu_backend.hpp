@@ -40,6 +40,8 @@ public:
 
     // 获取当前流
     hipStream_t getStream() { return stream; }
+    // 获取BLAS句柄
+    hipblasHandle_t getBLASHandle() { return blas_handle; }
     // 等待所有操作完成
     void synchronize();
 
@@ -51,6 +53,18 @@ public:
     void ropeEncoding(float *q, float *k, int headSize, int position, int dim, int kvDim, hipStream_t stream = nullptr);
     void swiGLLUFunc(float *hb, float *hb2, int hiddenDim, hipStream_t stream = nullptr);
     void flash_attention_gpu_step(float* q, float* k_cache, float* v_cache, float* output, float* scores, float* attn, int seq_len, hipStream_t stream = nullptr);
+    
+    // 修改后的QKV投影批处理方法，支持使用预分配的设备指针数组
+    void qkvProjectionBatched(
+        float* q, float* k, float* v,          // 输出：q, k, v向量
+        const float* x,                         // 输入：激活值
+        const float* wq, const float* wk, const float* wv, // 输入：权重矩阵
+        int embeddingDim, int kvDim,            // 维度
+        float **pre_allocated_d_A_array = nullptr, // 预分配的权重矩阵指针数组(可选)
+        float **pre_allocated_d_B_array = nullptr, // 预分配的输入指针数组(可选)
+        float **pre_allocated_d_C_array = nullptr, // 预分配的输出指针数组(可选)
+        hipStream_t stream = nullptr            // 可选流
+    );
 };
 
 #endif // GPU_BACKEND_HPP

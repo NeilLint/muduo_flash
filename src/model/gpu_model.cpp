@@ -39,6 +39,11 @@ GPU_Model::GPU_Model() : fd(-1), data(nullptr), fileSize(0)
     d_w.d_w3 = nullptr;
     d_w.d_rmsFinalWeight = nullptr;
     d_w.d_wcls = nullptr;
+    
+    // 初始化QKV投影的设备指针数组为空
+    d_A_array = nullptr;
+    d_B_array = nullptr;
+    d_C_array = nullptr;
 }
 
 GPU_Model::~GPU_Model() {
@@ -251,6 +256,11 @@ void GPU_Model::initializeModel(const std::string checkpointPath) {
     load(checkpointPath, &config, &fd, &data, &fileSize);
     state.allocateGPUMemory(&config);
     transferWeightsToDevice();
+    
+    // 分配QKV投影使用的设备指针数组
+    HIP_CHECK(hipMalloc(&d_A_array, 3 * sizeof(float*)));
+    HIP_CHECK(hipMalloc(&d_B_array, 3 * sizeof(float*)));
+    HIP_CHECK(hipMalloc(&d_C_array, 3 * sizeof(float*)));
 }
 
 
@@ -277,6 +287,21 @@ void GPU_Model::freeModel() {
     HIP_CHECK(hipFree(d_w.d_w3));
     HIP_CHECK(hipFree(d_w.d_rmsFinalWeight));
     HIP_CHECK(hipFree(d_w.d_wcls));
+    
+    // 释放QKV投影使用的设备指针数组
+    if (d_A_array != nullptr) {
+        HIP_CHECK(hipFree(d_A_array));
+        d_A_array = nullptr;
+    }
+    if (d_B_array != nullptr) {
+        HIP_CHECK(hipFree(d_B_array));
+        d_B_array = nullptr;
+    }
+    if (d_C_array != nullptr) {
+        HIP_CHECK(hipFree(d_C_array));
+        d_C_array = nullptr;
+    }
+    
     // 释放保存在GPU上的运行状态内存
     state.deallocateGPUMemory();
 }
@@ -304,13 +329,48 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
         state->d_k = state->d_keyCache + kvCacheOffset + pos * kvDim;
         state->d_v = state->d_valueCache + kvCacheOffset + pos * kvDim;
         
-        backend->matmul(state->d_q, state->d_branchActivation, d_w.d_wq + layer * embeddingDim * embeddingDim, embeddingDim, embeddingDim, backend->getStream());
-        backend->matmul(state->d_k, state->d_branchActivation, d_w.d_wk + layer * embeddingDim * kvDim, embeddingDim, kvDim, backend->getStream());
-        backend->matmul(state->d_v, state->d_branchActivation, d_w.d_wv + layer * embeddingDim * kvDim, embeddingDim, kvDim, backend->getStream());
-        backend->ropeEncoding(state->d_q, state->d_k, headSize, pos, embeddingDim, kvDim, backend->getStream());
+        // 在主机上创建临时的指针数组
+        float* h_A_array[3] = {
+            d_w.d_wq + layer * embeddingDim * embeddingDim,
+            d_w.d_wk + layer * embeddingDim * kvDim,
+            d_w.d_wv + layer * embeddingDim * kvDim
+        };
         
-        // 自注意力机制后同步，确保Q、K已准备好
-        // backend->synchronize();
+        float* h_B_array[3] = {
+            state->d_branchActivation,
+            state->d_branchActivation,
+            state->d_branchActivation
+        };
+        
+        float* h_C_array[3] = {
+            state->d_q,
+            state->d_k,
+            state->d_v
+        };
+        
+        // 将主机指针数组复制到设备
+        HIP_CHECK(hipMemcpy(d_A_array, h_A_array, 3 * sizeof(float*), hipMemcpyHostToDevice));
+        HIP_CHECK(hipMemcpy(d_B_array, h_B_array, 3 * sizeof(float*), hipMemcpyHostToDevice));
+        HIP_CHECK(hipMemcpy(d_C_array, h_C_array, 3 * sizeof(float*), hipMemcpyHostToDevice));
+        
+        // 使用QKV投影批处理函数
+        backend->qkvProjectionBatched(
+            state->d_q,    // Q输出
+            state->d_k,    // K输出
+            state->d_v,    // V输出
+            state->d_branchActivation,  // 输入激活值
+            d_w.d_wq + layer * embeddingDim * embeddingDim, // WQ权重
+            d_w.d_wk + layer * embeddingDim * kvDim,        // WK权重
+            d_w.d_wv + layer * embeddingDim * kvDim,        // WV权重
+            embeddingDim,  // 嵌入维度
+            kvDim,         // KV维度
+            d_A_array,     // 预分配的权重矩阵指针数组
+            d_B_array,     // 预分配的输入指针数组
+            d_C_array,     // 预分配的输出指针数组
+            backend->getStream()  // 流
+        );
+        
+        backend->ropeEncoding(state->d_q, state->d_k, headSize, pos, embeddingDim, kvDim, backend->getStream());
         
         // 使用flash attention实现
         backend->flash_attention_gpu_step(
@@ -324,9 +384,6 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
             backend->getStream()           // 流
         );
 
-        // 注意力计算后同步，确保所有头的计算都完成
-        // backend->synchronize();
-
         backend->matmul(state->d_extraBuffer, state->d_branchActivation, d_w.d_wo + layer * embeddingDim * embeddingDim, embeddingDim, embeddingDim, backend->getStream());
         
         backend->axpy(inputVec, state->d_extraBuffer, 1.f, embeddingDim, backend->getStream());
@@ -339,21 +396,13 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
         // 使用后端的swiGLLUFunc实现
         backend->swiGLLUFunc(state->d_hiddenBuffer, state->d_extraHiddenBuffer, ffnHiddenDim, backend->getStream());
         
-        // FFN计算后同步
-        // backend->synchronize();
-
         backend->matmul(state->d_branchActivation, state->d_hiddenBuffer, d_w.d_w2 + layer * ffnHiddenDim * embeddingDim, ffnHiddenDim, embeddingDim, backend->getStream());
         backend->axpy(inputVec, state->d_branchActivation, 1.f, embeddingDim, backend->getStream());
     }
 
     backend->rmsnorm(inputVec, inputVec, d_w.d_rmsFinalWeight, embeddingDim, backend->getStream());
-    // backend->synchronize();
     backend->matmul(state->d_logits, inputVec, d_w.d_tokenEmbeddingTable, embeddingDim, config->vocabSize, backend->getStream());
 
-    // 最终同步，确保logits已经计算完成
-    // backend->synchronize();
-    // 返回host端logits
-    // 
     HIP_CHECK(hipMemcpy(logits, state->d_logits, config->vocabSize * sizeof(float), hipMemcpyDeviceToHost));
 
     return logits;

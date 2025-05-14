@@ -51,6 +51,11 @@ public:
         float* d_wcls;
     }d_w; // 模型权重信息
     
+    // 用于QKV投影的设备指针数组
+    float **d_A_array;    // 权重矩阵(W_q, W_k, W_v)指针数组
+    float **d_B_array;    // 输入激活值指针数组
+    float **d_C_array;    // 输出(Q, K, V)指针数组
+    
     GPU_Model();
     ~GPU_Model();
     
