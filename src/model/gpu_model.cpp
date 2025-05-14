@@ -277,6 +277,7 @@ void GPU_Model::freeModel() {
     HIP_CHECK(hipFree(d_w.d_w3));
     HIP_CHECK(hipFree(d_w.d_rmsFinalWeight));
     HIP_CHECK(hipFree(d_w.d_wcls));
+    HIP_CHECK(hipFree(d_w.d_wqkv));
     // 释放保存在GPU上的运行状态内存
     state.deallocateGPUMemory();
 }
@@ -303,11 +304,14 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
         const int kvCacheOffset = layer * config->maxSeqLen * kvDim;
         state->d_k = state->d_keyCache + kvCacheOffset + pos * kvDim;
         state->d_v = state->d_valueCache + kvCacheOffset + pos * kvDim;
+        backend->matmul(state->d_qkv, state->d_branchActivation, d_w.d_wqkv + layer * config->dim * (config->numHeads * headSize), embeddingDim, config->dim*3, backend->getStream());
         
-        backend->matmul(state->d_q, state->d_branchActivation, d_w.d_wq + layer * embeddingDim * embeddingDim, embeddingDim, embeddingDim, backend->getStream());
-        backend->matmul(state->d_k, state->d_branchActivation, d_w.d_wk + layer * embeddingDim * kvDim, embeddingDim, kvDim, backend->getStream());
-        backend->matmul(state->d_v, state->d_branchActivation, d_w.d_wv + layer * embeddingDim * kvDim, embeddingDim, kvDim, backend->getStream());
+        HIP_CHECK(hipMemcpyAsync(state->d_q, state->d_qkv, config->dim * sizeof(float), hipMemcpyDeviceToDevice, backend->getStream()));
+        HIP_CHECK(hipMemcpyAsync(state->d_k, state->d_qkv + config->dim, config->dim * sizeof(float), hipMemcpyDeviceToDevice, backend->getStream()));
+        HIP_CHECK(hipMemcpyAsync(state->d_v, state->d_qkv + config->dim * 2, config->dim * sizeof(float), hipMemcpyDeviceToDevice, backend->getStream()));  
+        
         backend->ropeEncoding(state->d_q, state->d_k, headSize, pos, embeddingDim, kvDim, backend->getStream());
+
         
         // 自注意力机制后同步，确保Q、K已准备好
         // backend->synchronize();
@@ -367,9 +371,7 @@ void GPU_Model::transferWeightsToDevice() {
     HIP_CHECK(hipMalloc(&d_w.d_tokenEmbeddingTable, config.vocabSize * config.dim * sizeof(float)));
     HIP_CHECK(hipMalloc(&d_w.d_rmsAttWeight, numLayers * config.dim * sizeof(float)));
     HIP_CHECK(hipMalloc(&d_w.d_rmsFfnWeight, numLayers * config.dim * sizeof(float)));
-    HIP_CHECK(hipMalloc(&d_w.d_wq, numLayers * config.dim * (config.numHeads * headSize) * sizeof(float)));
-    HIP_CHECK(hipMalloc(&d_w.d_wk, numLayers * config.dim * (config.numKvHeads * headSize) * sizeof(float)));
-    HIP_CHECK(hipMalloc(&d_w.d_wv, numLayers * config.dim * (config.numKvHeads * headSize) * sizeof(float)));
+    HIP_CHECK(hipMalloc(&d_w.d_wqkv, numLayers * config.dim * (config.numHeads * headSize) * sizeof(float)) + numLayers * config.dim * (config.numKvHeads * headSize) * sizeof(float))+ numLayers * config.dim * (config.numKvHeads * headSize) * sizeof(float)));
     HIP_CHECK(hipMalloc(&d_w.d_wo, numLayers * (config.numHeads * headSize) * config.dim * sizeof(float)));
     HIP_CHECK(hipMalloc(&d_w.d_w1, numLayers * config.dim * config.feedForwardDim * sizeof(float)));
     HIP_CHECK(hipMalloc(&d_w.d_w2, numLayers * config.feedForwardDim * config.dim * sizeof(float)));
@@ -381,14 +383,23 @@ void GPU_Model::transferWeightsToDevice() {
     HIP_CHECK(hipMemcpy(d_w.d_tokenEmbeddingTable, h_w.tokenEmbeddingTable, config.vocabSize * config.dim * sizeof(float), hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_w.d_rmsAttWeight, h_w.rmsAttWeight, numLayers * config.dim * sizeof(float), hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_w.d_rmsFfnWeight, h_w.rmsFfnWeight, numLayers * config.dim * sizeof(float), hipMemcpyHostToDevice));
-    HIP_CHECK(hipMemcpy(d_w.d_wq, h_w.wq, numLayers * config.dim * (config.numHeads * headSize) * sizeof(float), hipMemcpyHostToDevice));
-    HIP_CHECK(hipMemcpy(d_w.d_wk, h_w.wk, numLayers * config.dim * (config.numKvHeads * headSize) * sizeof(float), hipMemcpyHostToDevice));
-    HIP_CHECK(hipMemcpy(d_w.d_wv, h_w.wv, numLayers * config.dim * (config.numKvHeads * headSize) * sizeof(float), hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_w.d_wo, h_w.wo, numLayers * (config.numHeads * headSize) * config.dim * sizeof(float), hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_w.d_w1, h_w.w1, numLayers * config.dim * config.feedForwardDim * sizeof(float), hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_w.d_w2, h_w.w2, numLayers * config.feedForwardDim * config.dim * sizeof(float), hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_w.d_w3, h_w.w3, numLayers * config.dim * config.feedForwardDim * sizeof(float), hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_w.d_rmsFinalWeight, h_w.rmsFinalWeight, config.dim * sizeof(float), hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_w.d_wcls, h_w.wcls, config.vocabSize * sizeof(float), hipMemcpyHostToDevice));
+
+
+    // 将QKV权重矩阵，按照【层，q,k,v】的顺序，复制到设备
+    float* h_q = nullptr, *h_k = nullptr, *h_v = nullptr;
+    for (uint64_t layer = 0; layer < numLayers; ++layer) {
+        h_q = h_w.wq + layer * config.dim * (config.numHeads * headSize);
+        h_k = h_w.wk + layer * config.dim * (config.numKvHeads * headSize);
+        h_v = h_w.wv + layer * config.dim * (config.numKvHeads * headSize);
+        HIP_CHECK(hipMemcpy(d_w.d_wqkv + layer * config.dim * (config.numHeads * headSize), h_q, config.dim * (config.numHeads * headSize) * sizeof(float), hipMemcpyHostToDevice));
+        HIP_CHECK(hipMemcpy(d_w.d_wqkv + layer * config.dim * (config.numKvHeads * headSize) + config.dim * (config.numHeads * headSize), h_k, config.dim * (config.numKvHeads * headSize) * sizeof(float), hipMemcpyHostToDevice));
+        HIP_CHECK(hipMemcpy(d_w.d_wqkv + layer * config.dim * (config.numKvHeads * headSize) +  config.dim * (config.numHeads * headSize) + config.dim * (config.numKvHeads * headSize), h_v, config.dim * (config.numKvHeads * headSize) * sizeof(float), hipMemcpyHostToDevice));
+    }
 }
 

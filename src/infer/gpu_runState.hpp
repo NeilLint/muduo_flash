@@ -35,6 +35,7 @@ public:
     float* d_valueCache;         // 设备上的值缓存
     float* d_scores;             // 设备上的flash attention分数
     float* d_attn;               // 设备上的flash attention权重
+    float* d_qkv;               // 设备上的QKV
 
     // GPU内存管理方法
     void allocateGPUMemory(CModelConfig* config);

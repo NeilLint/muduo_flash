@@ -40,9 +40,7 @@ public:
         float* d_tokenEmbeddingTable;
         float* d_rmsAttWeight;
         float* d_rmsFfnWeight;
-        float* d_wq;
-        float* d_wk;
-        float* d_wv;
+        float* d_wqkv; // 排列顺序 q,k,v，按层排列
         float* d_wo;
         float* d_w1;
         float* d_w2;
