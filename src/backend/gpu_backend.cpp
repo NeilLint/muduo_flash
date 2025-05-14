@@ -113,6 +113,8 @@ GPU_Backend::~GPU_Backend() {
         HIPBLAS_CHECK(hipblasDestroy(blas_handle));
         blas_handle = nullptr;
     }
+    
+
     // printf("GPU_Backend destroyed, hipBLAS handle and HIP stream released.\n");
 }
 
@@ -624,50 +626,70 @@ __global__ void optimized_flash_output_kernel(
     int num_heads
 );
 
-// QKV投影批处理实现 - 使用hipblasSgemmBatched
-void GPU_Backend::qkvProjectionBatched(
-    float* q, float* k, float* v,           // 输出：q, k, v向量
-    const float* x,                          // 输入：激活值
-    const float* wq, const float* wk, const float* wv, // 输入：权重矩阵
-    int embeddingDim, int kvDim,             // 维度
-    float **pre_allocated_d_A_array,        // 预分配的权重矩阵指针数组
-    float **pre_allocated_d_B_array,        // 预分配的输入指针数组
-    float **pre_allocated_d_C_array,        // 预分配的输出指针数组
-    hipStream_t stream)                     // 可选流
-{
-    // 使用类的默认流或传入的流
-    hipStream_t useStream = stream ? stream : this->stream;
-    
-    // 设置参数
-    const float alpha = 1.0f;
-    const float beta = 0.0f;
-    
-    // 使用BLAS句柄
-    hipblasHandle_t blas_handle = this->blas_handle;
-    
-    // 设置流
-    if (useStream != nullptr) {
-        HIPBLAS_CHECK(hipblasSetStream(blas_handle, useStream));
+
+__global__ void setup_qkv_pointers_kernel(
+    float** d_A_array, float** d_B_array, float** d_C_array,
+    float* d_wq, float* d_wk, float* d_wv,
+    float* input, float* q, float* k, float* v,
+    int embeddingDim, int kvDim, int layer
+) {
+    if (threadIdx.x == 0) {
+        d_A_array[0] = d_wq + layer * embeddingDim * embeddingDim;
+        d_A_array[1] = d_wk + layer * embeddingDim * kvDim;
+        d_A_array[2] = d_wv + layer * embeddingDim * kvDim;
+
+        d_B_array[0] = input;
+        d_B_array[1] = input;
+        d_B_array[2] = input;
+
+        d_C_array[0] = q;
+        d_C_array[1] = k;
+        d_C_array[2] = v;
     }
-    
-    // 基本矩阵维度
-    int M = embeddingDim;    // Q的维度
-    int N = 1;               // 列数为1 (向量)
-    int K = embeddingDim;    // 行数
-    
-    // 执行批处理 GEMM，一次性完成 Q, K, V 的投影
-    HIPBLAS_CHECK(hipblasSgemmBatched(
-        blas_handle,
-        HIPBLAS_OP_T,       // 转置A (因为权重矩阵是行主序存储)
-        HIPBLAS_OP_N,       // B不转置
-        M, N, K,            // 矩阵维度
-        &alpha,
-        (const float**)pre_allocated_d_A_array, K,  // A矩阵(WQ,WK,WV)
-        (const float**)pre_allocated_d_B_array, K,  // B矩阵(输入激活值)
-        &beta,
-        pre_allocated_d_C_array, M,                 // C矩阵(输出Q,K,V)
-        3                                           // 批次数量(QKV共3个)
-    ));
 }
 
 
+
+
+void GPU_Backend::qkvProjectionBatched(
+    float* q, float* k, float* v,
+    const float* x,
+    const float* wq, const float* wk, const float* wv,
+    float** d_A_array,float ** d_B_array,float** d_C_array,
+    int embeddingDim, int kvDim,
+    int layer,
+    hipStream_t stream)
+{
+    hipStream_t useStream = stream ? stream : this->stream;
+    const float alpha = 1.0f;
+    const float beta = 0.0f;
+    hipblasHandle_t blas_handle = this->blas_handle;
+    HIPBLAS_CHECK(hipblasSetStream(blas_handle, useStream));
+
+
+    setup_qkv_pointers_kernel<<<1, 1, 0, useStream>>>(
+        d_A_array, d_B_array, d_C_array,
+        const_cast<float*>(wq), const_cast<float*>(wk), const_cast<float*>(wv),
+        const_cast<float*>(x), q, k, v,
+        embeddingDim, kvDim, layer
+    );
+
+    // GEMM 参数
+    int M = embeddingDim;
+    int N = 1;
+    int K = embeddingDim;
+
+    // 执行 batched GEMM
+    HIPBLAS_CHECK(hipblasSgemmBatched(
+        blas_handle,
+        HIPBLAS_OP_T, HIPBLAS_OP_N,
+        M, N, K,
+        &alpha,
+        (const float**)d_A_array, K,
+        (const float**)d_B_array, K,
+        &beta,
+        d_C_array, M,
+        3
+    ));
+
+}

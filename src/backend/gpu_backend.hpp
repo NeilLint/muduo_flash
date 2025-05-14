@@ -27,7 +27,7 @@ class GPU_Backend {
 private:
     hipblasHandle_t blas_handle;     // hipBLAS handle
     hipStream_t stream;         // HIP流，用于管理内核执行顺序
-    
+
 public:
     static const int NUM_STREAMS = 4;  // 固定使用4个流
     static const int BLOCK_SIZE = 256;  // CUDA块大小
@@ -56,14 +56,13 @@ public:
     
     // 修改后的QKV投影批处理方法，支持使用预分配的设备指针数组
     void qkvProjectionBatched(
-        float* q, float* k, float* v,          // 输出：q, k, v向量
-        const float* x,                         // 输入：激活值
-        const float* wq, const float* wk, const float* wv, // 输入：权重矩阵
-        int embeddingDim, int kvDim,            // 维度
-        float **pre_allocated_d_A_array = nullptr, // 预分配的权重矩阵指针数组(可选)
-        float **pre_allocated_d_B_array = nullptr, // 预分配的输入指针数组(可选)
-        float **pre_allocated_d_C_array = nullptr, // 预分配的输出指针数组(可选)
-        hipStream_t stream = nullptr            // 可选流
+        float* q, float* k, float* v,
+        const float* x,
+        const float* wq, const float* wk, const float* wv,
+        float** d_A_array,float ** d_B_array,float** d_C_array,
+        int embeddingDim, int kvDim,
+        int layer,
+        hipStream_t stream
     );
 };
 

@@ -329,47 +329,18 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
         state->d_k = state->d_keyCache + kvCacheOffset + pos * kvDim;
         state->d_v = state->d_valueCache + kvCacheOffset + pos * kvDim;
         
-        // 在主机上创建临时的指针数组
-        float* h_A_array[3] = {
-            d_w.d_wq + layer * embeddingDim * embeddingDim,
-            d_w.d_wk + layer * embeddingDim * kvDim,
-            d_w.d_wv + layer * embeddingDim * kvDim
-        };
-        
-        float* h_B_array[3] = {
-            state->d_branchActivation,
-            state->d_branchActivation,
-            state->d_branchActivation
-        };
-        
-        float* h_C_array[3] = {
-            state->d_q,
-            state->d_k,
-            state->d_v
-        };
-        
-        // 将主机指针数组复制到设备
-        HIP_CHECK(hipMemcpy(d_A_array, h_A_array, 3 * sizeof(float*), hipMemcpyHostToDevice));
-        HIP_CHECK(hipMemcpy(d_B_array, h_B_array, 3 * sizeof(float*), hipMemcpyHostToDevice));
-        HIP_CHECK(hipMemcpy(d_C_array, h_C_array, 3 * sizeof(float*), hipMemcpyHostToDevice));
-        
+
         // 使用QKV投影批处理函数
         backend->qkvProjectionBatched(
-            state->d_q,    // Q输出
-            state->d_k,    // K输出
-            state->d_v,    // V输出
-            state->d_branchActivation,  // 输入激活值
-            d_w.d_wq + layer * embeddingDim * embeddingDim, // WQ权重
-            d_w.d_wk + layer * embeddingDim * kvDim,        // WK权重
-            d_w.d_wv + layer * embeddingDim * kvDim,        // WV权重
-            embeddingDim,  // 嵌入维度
-            kvDim,         // KV维度
-            d_A_array,     // 预分配的权重矩阵指针数组
-            d_B_array,     // 预分配的输入指针数组
-            d_C_array,     // 预分配的输出指针数组
-            backend->getStream()  // 流
+            state->d_q, state->d_k, state->d_v,
+            state->d_branchActivation,
+            d_w.d_wq, d_w.d_wk, d_w.d_wv,
+            d_A_array,d_B_array,d_C_array,
+            embeddingDim, kvDim,
+            layer,
+            backend->getStream()
         );
-        
+
         backend->ropeEncoding(state->d_q, state->d_k, headSize, pos, embeddingDim, kvDim, backend->getStream());
         
         // 使用flash attention实现
