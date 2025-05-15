@@ -23,6 +23,16 @@ __global__ void optimized_flash_output_kernel(
     int num_heads
 );
 
+__global__ void matmul_axpy_kernel(
+    const float* __restrict__ a,
+    const float* __restrict__ b,
+    float* __restrict__ c,
+    float alpha,
+    int m,
+    int n,
+    int k
+);
+
 class GPU_Backend {
 private:
     hipblasHandle_t blas_handle;     // hipBLAS handle
@@ -53,6 +63,8 @@ public:
     void ropeEncoding(float *q, float *k, int headSize, int position, int dim, int kvDim, hipStream_t stream = nullptr);
     void swiGLLUFunc(float *hb, float *hb2, int hiddenDim, hipStream_t stream = nullptr);
     void flash_attention_gpu_step(float* q, float* k_cache, float* v_cache, float* output, float* scores, float* attn, int seq_len, hipStream_t stream = nullptr);
+    // 融合算子：执行矩阵乘法后立即执行axpy操作
+    void matmul_axpy(float* out, const float* x, const float* w, const float* bias, float factor, int n, int d, hipStream_t stream = nullptr);
 };
 
 #endif // GPU_BACKEND_HPP
