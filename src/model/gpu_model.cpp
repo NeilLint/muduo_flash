@@ -31,9 +31,8 @@ GPU_Model::GPU_Model() : fd(-1), data(nullptr), fileSize(0)
     d_w.d_rmsAttWeight = nullptr;
     d_w.d_rmsFfnWeight = nullptr;
     d_w.d_wo = nullptr;
-    d_w.d_w1 = nullptr;
     d_w.d_w2 = nullptr;
-    d_w.d_w3 = nullptr;
+    d_w.d_w1_w3 = nullptr;
     d_w.d_rmsFinalWeight = nullptr;
     d_w.d_wcls = nullptr;
     
@@ -267,9 +266,8 @@ void GPU_Model::freeModel() {
     HIP_CHECK(hipFree(d_w.d_tokenEmbeddingTable));
     HIP_CHECK(hipFree(d_w.d_rmsAttWeight));    
     HIP_CHECK(hipFree(d_w.d_wo));
-    HIP_CHECK(hipFree(d_w.d_w1));
+    HIP_CHECK(hipFree(d_w.d_w1_w3));
     HIP_CHECK(hipFree(d_w.d_w2));
-    HIP_CHECK(hipFree(d_w.d_w3));
     HIP_CHECK(hipFree(d_w.d_rmsFinalWeight));
     HIP_CHECK(hipFree(d_w.d_wcls));
     HIP_CHECK(hipFree(d_w.d_wqkv));
@@ -366,9 +364,7 @@ void GPU_Model::transferWeightsToDevice() {
     // 为QKV权重分配一个大矩阵，垂直堆叠Q、K、V
     HIP_CHECK(hipMalloc(&d_w.d_wqkv, numLayers * 3 * config.dim * config.dim * sizeof(float)));
     HIP_CHECK(hipMalloc(&d_w.d_wo, numLayers * config.dim * config.dim * sizeof(float)));
-    HIP_CHECK(hipMalloc(&d_w.d_w1, numLayers * config.dim * config.feedForwardDim * sizeof(float)));
     HIP_CHECK(hipMalloc(&d_w.d_w2, numLayers * config.feedForwardDim * config.dim * sizeof(float)));
-    HIP_CHECK(hipMalloc(&d_w.d_w3, numLayers * config.dim * config.feedForwardDim * sizeof(float)));
     HIP_CHECK(hipMalloc(&d_w.d_rmsFinalWeight, config.dim * sizeof(float)));
     HIP_CHECK(hipMalloc(&d_w.d_wcls, config.vocabSize * sizeof(float)));
     HIP_CHECK(hipMalloc(&d_w.d_w1_w3, numLayers * 2 *config.dim * config.feedForwardDim * sizeof(float)));
@@ -377,9 +373,7 @@ void GPU_Model::transferWeightsToDevice() {
     HIP_CHECK(hipMemcpy(d_w.d_rmsAttWeight, h_w.rmsAttWeight, numLayers * config.dim * sizeof(float), hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_w.d_rmsFfnWeight, h_w.rmsFfnWeight, numLayers * config.dim * sizeof(float), hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_w.d_wo, h_w.wo, numLayers * config.dim * config.dim * sizeof(float), hipMemcpyHostToDevice));
-    HIP_CHECK(hipMemcpy(d_w.d_w1, h_w.w1, numLayers * config.dim * config.feedForwardDim * sizeof(float), hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_w.d_w2, h_w.w2, numLayers * config.feedForwardDim * config.dim * sizeof(float), hipMemcpyHostToDevice));
-    HIP_CHECK(hipMemcpy(d_w.d_w3, h_w.w3, numLayers * config.dim * config.feedForwardDim * sizeof(float), hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_w.d_rmsFinalWeight, h_w.rmsFinalWeight, config.dim * sizeof(float), hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_w.d_wcls, h_w.wcls, config.vocabSize * sizeof(float), hipMemcpyHostToDevice));
     // 将QKV权重矩阵，按照【层，q,k,v】的顺序，垂直堆叠复制到设备

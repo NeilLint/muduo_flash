@@ -60,7 +60,7 @@ void GPU_RunState::allocateGPUMemory(CModelConfig* config) {
     // std::cout << "[INFO:] GPU memory allocation successful!" << std::endl;
     // 设定 d_hiddenBuffer
     d_hiddenBuffer = d_hiddenBuffer_extraHiddenBuffer;
-    d_extraHiddenBuffer = d_hiddenBuffer_extraHiddenBuffer + config->feedForwardDim * sizeof(float);
+    d_extraHiddenBuffer = d_hiddenBuffer_extraHiddenBuffer + config->feedForwardDim;
 }
 
 void GPU_RunState::deallocateGPUMemory() {
