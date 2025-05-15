@@ -327,18 +327,18 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
             backend->getStream()           // 流
         );
 
-        // 使用融合算子替换单独的matmul和axpy操作
+        // 使用融合算子替换matmul + axpy
         backend->matmul_axpy(
-            inputVec,                                         // 输出向量(同时是axpy的目标)
-            state->d_branchActivation,                        // 输入向量
+            inputVec,                                   // 输出向量(axpy的目标)
+            state->d_branchActivation,                  // 输入向量 
             d_w.d_wo + layer * embeddingDim * embeddingDim,  // 权重矩阵
-            nullptr,                                          // 不使用偏置
-            1.0f,                                             // axpy的缩放因子
-            embeddingDim,                                     // 输入维度
-            embeddingDim,                                     // 输出维度
-            backend->getStream()                              // 流
+            nullptr,                                    // 不使用偏置
+            1.0f,                                       // 缩放因子
+            embeddingDim,                               // 输入维度
+            embeddingDim,                               // 输出维度
+            backend->getStream()                        // 流
         );
-        
+
         backend->rmsnorm(state->d_branchActivation, inputVec, d_w.d_rmsFfnWeight + layer * embeddingDim, embeddingDim, backend->getStream());
         
         // backend->matmul(state->d_hiddenBuffer, state->d_branchActivation, d_w.d_w1 + layer * embeddingDim * ffnHiddenDim, embeddingDim, ffnHiddenDim, backend->getStream());
@@ -349,16 +349,16 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
         // 使用后端的swiGLLUFunc实现
         backend->swiGLLUFunc(state->d_hiddenBuffer, state->d_extraHiddenBuffer, ffnHiddenDim, backend->getStream());
         
-        // 使用融合算子替换单独的matmul和axpy操作
+        // 使用融合算子替换matmul + axpy
         backend->matmul_axpy(
-            inputVec,                                         // 输出向量(同时是axpy的目标)
-            state->d_hiddenBuffer,                            // 输入向量
+            inputVec,                                   // 输出向量(axpy的目标)
+            state->d_hiddenBuffer,                      // 输入向量
             d_w.d_w2 + layer * ffnHiddenDim * embeddingDim,  // 权重矩阵
-            nullptr,                                          // 不使用偏置
-            1.0f,                                             // axpy的缩放因子
-            ffnHiddenDim,                                     // 输入维度
-            embeddingDim,                                     // 输出维度
-            backend->getStream()                              // 流
+            nullptr,                                    // 不使用偏置
+            1.0f,                                       // 缩放因子
+            ffnHiddenDim,                               // 输入维度
+            embeddingDim,                               // 输出维度
+            backend->getStream()                        // 流
         );
         
         // 原先的代码被注释掉：

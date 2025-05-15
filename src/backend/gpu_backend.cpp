@@ -145,29 +145,28 @@ void GPU_Backend::matmul(float* o_d,           // 指向 GPU 上的输出向量 
         return;
     }
 
+    // 使用指定的流或默认流
+    hipStream_t useStream = stream ? stream : this->stream;
+    HIPBLAS_CHECK(hipblasSetStream(blas_handle, useStream));
+
     const float alpha = 1.0f;
     const float beta = 0.0f;
 
-
-    int M = d;      // 行数 of op(A) and C. op(A) is d x n.
-    int N_gemm = 1; // 列数 of op(B) and C. op(B) is n x 1.
-    int K = n;      // 列数 of op(A) and 行数 of op(B).
-
-    int lda = n;
-
-    int ldb = n;
-
-    int ldc = d;
-
-    HIPBLAS_CHECK(hipblasSgemm(blas_handle,
-                               HIPBLAS_OP_T, HIPBLAS_OP_N,
-                               M, N_gemm, K,
-                               &alpha,
-                               w_d, lda,  // A (W_d), lda = n (K)
-                               x_d, ldb,  // B (X_d), ldb = n (K)
-                               &beta,
-                               o_d, ldc   // C (O_d), ldc = d (M)
-                               ));
+    // 对于矩阵-向量乘法，使用GEMV而不是GEMM以获得更高效率
+    HIPBLAS_CHECK(hipblasSgemv(
+        blas_handle,
+        HIPBLAS_OP_T,       // 转置矩阵，因为我们的矩阵是行主序存储
+        n,                  // 原始矩阵的行数
+        d,                  // 原始矩阵的列数
+        &alpha,             // 缩放因子
+        w_d,                // 矩阵
+        n,                  // 矩阵的leading dimension
+        x_d,                // 输入向量
+        1,                  // 输入向量的步长
+        &beta,              // 累积因子
+        o_d,                // 输出向量
+        1                   // 输出向量的步长
+    ));
 }
 
 
@@ -651,76 +650,6 @@ __global__ void matmul_axpy_kernel(
     }
 }
 
-// // 融合的matmul_axpy函数实现
-// void GPU_Backend::matmul_axpy(
-//     float* out,                    // 输出向量，同时是axpy的目标
-//     const float* x,                // 输入向量
-//     const float* w,                // 权重矩阵
-//     const float* bias,             // 可选的偏置向量(如果为nullptr则不使用)
-//     float factor,                  // axpy的缩放因子
-//     int n,                         // 输入维度
-//     int d,                         // 输出维度
-//     hipStream_t stream             // 可选的CUDA流
-// ) {
-//     // 输入验证
-//     if (!out || !x || !w || d <= 0 || n <= 0) {
-//         fprintf(stderr, "GPU matmul_axpy Error: Invalid input pointers or dimensions.\n");
-//         return;
-//     }
-    
-//     hipStream_t useStream = stream ? stream : this->stream;
-    
-//     if (bias != nullptr) {
-//         // 如果提供了偏置，先将其复制到输出
-//         HIP_CHECK(hipMemcpyAsync(out, bias, d * sizeof(float), hipMemcpyDeviceToDevice, useStream));
-//     }
-    
-//     // 使用hipBLAS库实现高性能的矩阵乘法+axpy
-//     // 方法1: 如果使用hipBLAS，可以直接用beta参数实现累加
-//     if (d <= 1024) { // 对于小尺寸问题，使用自定义内核可能更高效
-//         dim3 blockDim(1, 256);
-//         dim3 gridDim(1, (d + blockDim.y - 1) / blockDim.y);
-        
-//         hipLaunchKernelGGL(
-//             matmul_axpy_kernel,
-//             gridDim,
-//             blockDim,
-//             0,
-//             useStream,
-//             w,          // 注意: 我们假设w是行主序存储
-//             x,
-//             out,
-//             factor,
-//             d,
-//             1,
-//             n
-//         );
-//     } else {
-//         // 对于大尺寸问题，使用hipBLAS可能更高效
-//         const float alpha = factor;
-//         const float beta = 1.0f; // beta=1表示C = beta*C + alpha*(op(A)op(B))
-        
-//         HIPBLAS_CHECK(hipblasSgemm(
-//             blas_handle,
-//             HIPBLAS_OP_T,
-//             HIPBLAS_OP_N,
-//             d,          // M: 输出行数
-//             1,          // N: 输出列数
-//             n,          // K: 内部维度
-//             &alpha,
-//             w,          // A
-//             n,          // lda
-//             x,          // B
-//             n,          // ldb
-//             &beta,
-//             out,        // C
-//             d           // ldc
-//         ));
-//     }
-    
-//     HIP_CHECK(hipGetLastError());
-// }
-
 // 融合的matmul_axpy函数实现
 void GPU_Backend::matmul_axpy(
     float* out,                    // 输出向量，同时是axpy的目标
@@ -739,27 +668,26 @@ void GPU_Backend::matmul_axpy(
     }
     
     hipStream_t useStream = stream ? stream : this->stream;
+    HIPBLAS_CHECK(hipblasSetStream(blas_handle, useStream));
     
-    // 直接使用hipBLAS库实现高性能的矩阵乘法+axpy
-    // 使用beta参数实现累加：C = beta*C + alpha*(op(A)op(B))
+    // 直接使用hipBLAS库的GEMV函数实现高性能的矩阵乘法+axpy
+    // 设置beta=1.0，这样就直接在输出向量上累加结果
     const float alpha = factor;
-    const float beta = 1.0f;
+    const float beta = 1.0f;  // 保留原始值并添加新结果
     
-    HIPBLAS_CHECK(hipblasSgemm(
+    HIPBLAS_CHECK(hipblasSgemv(
         blas_handle,
-        HIPBLAS_OP_T,       // 转置A矩阵
-        HIPBLAS_OP_N,       // 不转置B矩阵
-        d,                  // M: 输出行数
-        1,                  // N: 输出列数
-        n,                  // K: 内部维度
-        &alpha,
-        w,                  // A矩阵
-        n,                  // lda (原始矩阵的行大小)
-        x,                  // B矩阵
-        n,                  // ldb (原始矩阵的行大小)
-        &beta,
-        out,                // C矩阵
-        d                   // ldc (输出矩阵的行大小)
+        HIPBLAS_OP_T,    // 转置矩阵，因为我们的矩阵是行主序存储
+        n,               // 原始矩阵的行数
+        d,               // 原始矩阵的列数
+        &alpha,          // 缩放因子
+        w,               // 矩阵
+        n,               // 矩阵的leading dimension
+        x,               // 输入向量
+        1,               // 输入向量的步长
+        &beta,           // 累积因子，1.0表示保留原始输出并添加结果
+        out,             // 输出向量
+        1                // 输出向量的步长
     ));
     
     HIP_CHECK(hipGetLastError());
