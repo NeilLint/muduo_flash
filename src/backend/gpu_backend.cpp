@@ -627,26 +627,7 @@ __global__ void optimized_flash_output_kernel(
 );
 
 
-__global__ void setup_qkv_pointers_kernel(
-    float** d_A_array, float** d_B_array, float** d_C_array,
-    float* d_wq, float* d_wk, float* d_wv,
-    float* input, float* q, float* k, float* v,
-    int embeddingDim, int kvDim, int layer
-) {
-    if (threadIdx.x == 0) {
-        d_A_array[0] = d_wq + layer * embeddingDim * embeddingDim;
-        d_A_array[1] = d_wk + layer * embeddingDim * kvDim;
-        d_A_array[2] = d_wv + layer * embeddingDim * kvDim;
 
-        d_B_array[0] = input;
-        d_B_array[1] = input;
-        d_B_array[2] = input;
-
-        d_C_array[0] = q;
-        d_C_array[1] = k;
-        d_C_array[2] = v;
-    }
-}
 
 
 

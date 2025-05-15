@@ -29,9 +29,8 @@ void GPU_RunState::allocateGPUMemory(CModelConfig* config) {
     // 分配设备内存
     HIP_CHECK(hipMalloc((void**)&d_currentActivation, config->dim * sizeof(float)));
     HIP_CHECK(hipMalloc((void**)&d_branchActivation, config->dim * sizeof(float)));
+    HIP_CHECK(hipMalloc((void**)&d_hiddenBuffer_extraHiddenBuffer, 2 * config->feedForwardDim * sizeof(float)));
     HIP_CHECK(hipMalloc((void**)&d_extraBuffer, config->dim * sizeof(float)));
-    HIP_CHECK(hipMalloc((void**)&d_hiddenBuffer, config->feedForwardDim * sizeof(float)));
-    HIP_CHECK(hipMalloc((void**)&d_extraHiddenBuffer, config->feedForwardDim * sizeof(float)));
     HIP_CHECK(hipMalloc((void**)&d_q, config->dim * sizeof(float)));
     HIP_CHECK(hipMalloc((void**)&d_k, config->dim * sizeof(float)));
     HIP_CHECK(hipMalloc((void**)&d_v, config->dim * sizeof(float)));
@@ -47,8 +46,7 @@ void GPU_RunState::allocateGPUMemory(CModelConfig* config) {
     HIP_CHECK(hipMemset(d_currentActivation, 0, config->dim * sizeof(float)));
     HIP_CHECK(hipMemset(d_branchActivation, 0, config->dim * sizeof(float)));
     HIP_CHECK(hipMemset(d_extraBuffer, 0, config->dim * sizeof(float)));
-    HIP_CHECK(hipMemset(d_hiddenBuffer, 0, config->feedForwardDim * sizeof(float)));
-    HIP_CHECK(hipMemset(d_extraHiddenBuffer, 0, config->feedForwardDim * sizeof(float)));
+    HIP_CHECK(hipMemset(d_hiddenBuffer_extraHiddenBuffer, 0, 2 * config->feedForwardDim * sizeof(float)));
     HIP_CHECK(hipMemset(d_q, 0, config->dim * sizeof(float)));
     HIP_CHECK(hipMemset(d_k, 0, config->dim * sizeof(float)));
     HIP_CHECK(hipMemset(d_v, 0, config->dim * sizeof(float)));
@@ -60,14 +58,18 @@ void GPU_RunState::allocateGPUMemory(CModelConfig* config) {
     HIP_CHECK(hipMemset(d_attn, 0, config->numHeads * config->maxSeqLen * sizeof(float)));
     HIP_CHECK(hipMemset(d_qkv, 0, 3 * config->dim * sizeof(float)));
     // std::cout << "[INFO:] GPU memory allocation successful!" << std::endl;
+    // 设定 d_hiddenBuffer
+    d_hiddenBuffer = d_hiddenBuffer_extraHiddenBuffer;
+    d_extraHiddenBuffer = d_hiddenBuffer_extraHiddenBuffer + config->feedForwardDim * sizeof(float);
 }
 
 void GPU_RunState::deallocateGPUMemory() {
+    if (d_hiddenBuffer) { d_hiddenBuffer = nullptr; }
+    if (d_extraHiddenBuffer) { d_extraHiddenBuffer = nullptr; }
     if (d_currentActivation) { HIP_CHECK(hipFree(d_currentActivation)); d_currentActivation = nullptr; }
     if (d_branchActivation) { HIP_CHECK(hipFree(d_branchActivation)); d_branchActivation = nullptr; }
     if (d_extraBuffer) { HIP_CHECK(hipFree(d_extraBuffer)); d_extraBuffer = nullptr; }
-    if (d_hiddenBuffer) { HIP_CHECK(hipFree(d_hiddenBuffer)); d_hiddenBuffer = nullptr; }
-    if (d_extraHiddenBuffer) { HIP_CHECK(hipFree(d_extraHiddenBuffer)); d_extraHiddenBuffer = nullptr; }
+    if (d_hiddenBuffer_extraHiddenBuffer) { HIP_CHECK(hipFree(d_hiddenBuffer_extraHiddenBuffer)); d_hiddenBuffer_extraHiddenBuffer = nullptr; }
     if (d_q) { HIP_CHECK(hipFree(d_q)); d_q = nullptr; }
     if (d_k) { HIP_CHECK(hipFree(d_k)); d_k = nullptr; }
     if (d_v) { HIP_CHECK(hipFree(d_v)); d_v = nullptr; }
@@ -77,7 +79,7 @@ void GPU_RunState::deallocateGPUMemory() {
     if (d_valueCache) { hipError_t error = hipFree(d_valueCache); d_valueCache = nullptr; }
     if (d_scores) { HIP_CHECK(hipFree(d_scores)); d_scores = nullptr; }
     if (d_attn) { HIP_CHECK(hipFree(d_attn)); d_attn = nullptr; }
-    // if (d_qkv) { HIP_CHECK(hipFree(d_qkv)); d_qkv = nullptr; }
+    if (d_qkv) { HIP_CHECK(hipFree(d_qkv)); d_qkv = nullptr; }
     // std::cout << "[INFO:] GPU memory deallocation successful!" << std::endl;
 }
 

@@ -42,17 +42,12 @@ public:
         float* d_rmsFfnWeight;
         float* d_wqkv; // 排列顺序 q,k,v，按层排列
         float* d_wo;
-        float* d_w1;
         float* d_w2;
-        float* d_w3;
+        float* d_w1_w3; // 使用一个矩阵乘法完成w1和w3的计算
         float* d_rmsFinalWeight;
         float* d_wcls;
     }d_w; // 模型权重信息
     
-    // 用于QKV投影的设备指针数组
-    float **d_A_array;    // 权重矩阵(W_q, W_k, W_v)指针数组
-    float **d_B_array;    // 输入激活值指针数组
-    float **d_C_array;    // 输出(Q, K, V)指针数组
     
     GPU_Model();
     ~GPU_Model();

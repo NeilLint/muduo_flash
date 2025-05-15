@@ -12,7 +12,7 @@
 module load compiler/dtk/24.04.2
 
 
-cd /public/home/xdzs2025_cubic/muduo_gpu  
+cd /public/home/xdzs2025_cubic/muduo_flash
 
 
 ./muduo data/stories110M.bin data/tokenizer.bin data/input_prompt.txt

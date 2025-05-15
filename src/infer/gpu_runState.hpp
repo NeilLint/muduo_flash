@@ -24,6 +24,7 @@ public:
     float* d_currentActivation;  // 设备上的当前激活值
     float* d_branchActivation;   // 设备上的分支激活值
     float* d_extraBuffer;        // 设备上的额外缓冲区
+    float* d_hiddenBuffer_extraHiddenBuffer; // hiddenBuffer和extraHiddenBuffer的合并
     float* d_hiddenBuffer;       // 设备上的隐藏缓冲区
     float* d_extraHiddenBuffer;  // 设备上的额外隐藏缓冲区
     float* d_q;                  // 设备上的查询向量
