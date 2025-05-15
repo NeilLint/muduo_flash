@@ -420,53 +420,6 @@ void GPU_Backend::swiGLLUFunc(float *hb, float *hb2, int hiddenDim, hipStream_t 
         // 不再显式同步，由调用者决定何时同步
     }
 
-void GPU_Backend::flash_attention_gpu_step(
-    float* q,
-    float* k_cache,
-    float* v_cache,
-    float* output,
-    float* scores,
-    float* attn,
-    int seq_len,
-    hipStream_t stream
-) {
-    // 使用指定的流或默认流
-    hipStream_t useStream = stream ? stream : this->stream;
-    
-    // 优化的Flash Attention实现
-    const int BLOCK_SIZE = 256;  // 更大的块大小提高并行度
-    const int HEAD_SIZE = GPU_Backend::HEAD_SIZE;
-    const int NUM_HEADS = GPU_Backend::NUM_HEADS;
-    
-    // 1. 计算QK点积和Softmax
-    // 每个block处理一个注意力头
-    dim3 grid_qk(NUM_HEADS);
-    dim3 block_qk(BLOCK_SIZE);
-    
-    // 共享内存大小计算
-    size_t shmem_size_qk = 2 * BLOCK_SIZE * sizeof(float);  // 用于Softmax计算
-    
-    // 计算QK点积并应用Softmax
-    optimized_flash_qk_kernel<<<grid_qk, block_qk, shmem_size_qk, useStream>>>(
-        q, k_cache, scores, attn, seq_len, HEAD_SIZE, NUM_HEADS
-    );
-    
-    // 确保QK计算完成
-    HIP_CHECK(hipGetLastError());
-    
-    // 2. 计算最终输出
-    // 每个block处理一个注意力头的所有特征
-    dim3 grid_output(NUM_HEADS);
-    dim3 block_output(min(256, HEAD_SIZE));  // 适应头大小
-    
-    // 使用优化后的内核计算输出
-    optimized_flash_output_kernel<<<grid_output, block_output, 0, useStream>>>(
-        attn, v_cache, output, seq_len, HEAD_SIZE, NUM_HEADS
-    );
-    
-    // 检查错误但不强制同步
-    HIP_CHECK(hipGetLastError());
-}
 
 // 优化的QK计算和Softmax内核
 __global__ void optimized_flash_qk_kernel(
@@ -604,6 +557,55 @@ __global__ void optimized_flash_output_kernel(
     // 写入最终结果
     output[head_idx * head_size + feat_idx] = acc;
 }
+void GPU_Backend::flash_attention_gpu_step(
+    float* q,
+    float* k_cache,
+    float* v_cache,
+    float* output,
+    float* scores,
+    float* attn,
+    int seq_len,
+    hipStream_t stream
+) {
+    // 使用指定的流或默认流
+    hipStream_t useStream = stream ? stream : this->stream;
+    
+    // 优化的Flash Attention实现
+    const int BLOCK_SIZE = 256;  // 更大的块大小提高并行度
+    const int HEAD_SIZE = GPU_Backend::HEAD_SIZE;
+    const int NUM_HEADS = GPU_Backend::NUM_HEADS;
+    
+    // 1. 计算QK点积和Softmax
+    // 每个block处理一个注意力头
+    dim3 grid_qk(NUM_HEADS);
+    dim3 block_qk(BLOCK_SIZE);
+    
+    // 共享内存大小计算
+    size_t shmem_size_qk = 2 * BLOCK_SIZE * sizeof(float);  // 用于Softmax计算
+    
+    // 计算QK点积并应用Softmax
+    optimized_flash_qk_kernel<<<grid_qk, block_qk, shmem_size_qk, useStream>>>(
+        q, k_cache, scores, attn, seq_len, HEAD_SIZE, NUM_HEADS
+    );
+    
+    // 确保QK计算完成
+    HIP_CHECK(hipGetLastError());
+    
+    // 2. 计算最终输出
+    // 每个block处理一个注意力头的所有特征
+    dim3 grid_output(NUM_HEADS);
+    dim3 block_output(min(256, HEAD_SIZE));  // 适应头大小
+    
+    // 使用优化后的内核计算输出
+    optimized_flash_output_kernel<<<grid_output, block_output, 0, useStream>>>(
+        attn, v_cache, output, seq_len, HEAD_SIZE, NUM_HEADS
+    );
+    
+    // 检查错误但不强制同步
+    HIP_CHECK(hipGetLastError());
+}
+
+
 
 // 融合的matmul_axpy函数实现
 void GPU_Backend::matmul_axpy(
