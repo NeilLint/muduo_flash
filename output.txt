@@ -7,7 +7,7 @@ Lucy held onto the old man's hand and he lifted her up. She grabbed the balloon 
 The old man said, "Now, let's go find a place to release the balloon."
 Lucy and the old man walked around the park until they found a nice spot. The old man said, "Now, let's release the balloon."
 Lucy and the old man released the balloon and watched it
-Sample 1 (Result Validation PASS): 255 tokens in 925 ms, throughput = 275.676 tokens/s
+Sample 1 (Result Validation PASS): 255 tokens in 924 ms, throughput = 275.974 tokens/s
 
 In the bustling city of Brooklyn, a 3 year old girl, was walking with her mom. As they walked, they saw a big billboard with a picture of a beautiful flower. The little girl was so excited and asked her mom, "What is that?"
 Her mom smiled and said, "That is a billboard. It is a sign that people put up to show something they value."
@@ -30,7 +30,7 @@ Sample 3 (Result Validation PASS): 242 tokens in 867 ms, throughput = 279.123 to
 In the heart of Harmonyville, there was a little girl named Lily. She loved to play with her toys and her friends. One day, Lily's mommy told her that they were going to visit her grandma. Lily was excited because she loved her grandma very much.
 When they arrived at grandma's house, Lily saw a big, scary dog. She was afraid and didn't want to go near it. But her mommy told her that the dog was friendly and wouldn't hurt her. Lily trusted her mommy and slowly approached the dog. To her surprise, the dog licked her hand and wagged its tail.
 Lily was happy and played with the dog for a while. But then, something unexpected happened. The dog's owner came out and told Lily that the dog was actually a stray and had been lost for a few days. Lily's mommy helped the owner find the dog's home and they were reunited. Lily was sad to say goodbye to the dog, but she knew that it was the right thing to do.
-Sample 4 (Result Validation PASS): 239 tokens in 855 ms, throughput = 279.532 tokens/s
+Sample 4 (Result Validation PASS): 239 tokens in 856 ms, throughput = 279.206 tokens/s
 
 Little Bella loved math problems. She was only three years old, but she was very smart. Every day, she would go to school and learn something new.
 One day, Bella was in her classroom and she saw a big blackboard. She was so excited! She wanted to learn how to write on it.
@@ -48,7 +48,7 @@ Emma and her friend Olivia loved animals and magic. One day, they decided to go 
 Olivia waved her wand and the forest lit up. They saw a beautiful unicorn and a friendly dragon. They played with the animals and had a lot of fun.
 But then, they heard a loud noise. It was a big, scary monster! The monster chased them and they ran as fast as they could. But the monster was too fast. It caught them and took them away.
 The end.
-Sample 6 (Result Validation PASS): 199 tokens in 685 ms, throughput = 290.511 tokens/s
+Sample 6 (Result Validation PASS): 199 tokens in 684 ms, throughput = 290.936 tokens/s
 
 In a bustling town filled with computers and data lived two best friends, Jack and Jill. They were always together, playing and laughing. One day, Jack and Jill decided to go on an adventure. They packed their bags and set off.
 As they walked, they noticed a big, shiny computer in the middle of the road. Jack and Jill were so excited! They ran over to it and started to play.
@@ -64,14 +64,14 @@ One day, Libby and Penny decided to have a contest to see who could build the ta
 Suddenly, a big gust of wind blew and knocked down their towers. Libby and Penny were very sad and angry. They started to quarrel about who was the best at building towers.
 Just then, a wise old man walked by and saw the two friends quarreling. He said, "Friends, it doesn't matter who is the best at building towers. What matters is that you work together and help each other. That's what makes a tower strong and tall."
  Libby and Penny realized that the old man was right. They hugged each other and started to build their towers again, this time working together. They were both very happy and proud of their towers.
-Sample 8 (Result Validation PASS): 255 tokens in 924 ms, throughput = 275.974 tokens/s
+Sample 8 (Result Validation PASS): 255 tokens in 925 ms, throughput = 275.676 tokens/s
 
 In a bustling town full of computers and robots lived two curious kids named Alex and Taylor. Alex was always curious about the world around him and loved to explore. One day, Alex and Taylor were walking around town when they noticed a big, shiny computer in a store window.
 Alex said to Taylor, "Let's go inside and take a look!" Taylor agreed and they both ran inside. Alex was amazed by the computer and wanted to take it home. Taylor said, "Let's ask the store owner if we can take it."
 The store owner said, "No, this computer is too expensive. You can't take it." Alex was disappointed but he didn't give up. He said, "Please, can we just take it for a little while?"
 The store owner thought for a moment and then said, "Okay, but you have to be very careful with it." Alex and Taylor were so excited and they quickly grabbed the computer and ran out of the store.
 Alex and Taylor were so happy to have the computer. They took it home and started playing with it. They had so much fun and Alex was so curious about how the computer worked. He asked Taylor lots of
-Sample 9 (Result Validation PASS): 255 tokens in 924 ms, throughput = 275.974 tokens/s
+Sample 9 (Result Validation PASS): 255 tokens in 926 ms, throughput = 275.378 tokens/s
 
 In a bustling forest full of curious animals, a rabbit and a squirrel. The rabbit was hopping around, looking for something to eat. The squirrel was gathering nuts and twigs.
 Suddenly, the rabbit stopped and said, "I'm so hungry! I wish I had something to eat."
@@ -96,7 +96,7 @@ The girl smiled and asked, "What's your name?"
 The girl smiled again and said, "I'm Lily. I like your dress. It's so pretty!"
 Lily smiled even wider and said, "Thank you! I like your dress too. It's so popular!"
 The two of them smiled at each other and continued walking down the street. They were both very happy to have met each other.
-Sample 12 (Result Validation PASS): 186 tokens in 630 ms, throughput = 295.238 tokens/s
+Sample 12 (Result Validation PASS): 186 tokens in 631 ms, throughput = 294.77 tokens/s
 
 It was a bustling day in Scienceville, and the sun was shining brightly. Little Jack was playing in the park with his friends. He was having a great time, running around and playing tag.
 Suddenly, Jack noticed something strange. He saw a big, black cloud in the sky. It was getting bigger and bigger, and it was coming closer and closer. Jack was scared.
@@ -110,12 +110,12 @@ One sunny afternoon, a little girl named Lily went to the park with her mom. The
 Suddenly, a boy named Max came over and said, "I can climb the tree! Watch me!" Max started to climb the tree, but he got stuck. Lily's mom said, "Max, you need to be careful. You could get hurt." 
 Max said, "I'm sorry. I didn't mean to get stuck. Can you help me get down?" Lily's mom said, "Sure, but first we need to find a rope." They looked around and found a rope. Lily's mom tied the rope to the tree and Max was able to climb down safely. 
 After Max was safe, he said, "Thank you for helping me. I'm sorry I didn't listen to you." Lily's mom said, "It's okay. We all make mistakes. But it's important to be careful and listen to others. That's how we can stay safe and
-Sample 14 (Result Validation PASS): 255 tokens in 929 ms, throughput = 274.489 tokens/s
+Sample 14 (Result Validation PASS): 255 tokens in 926 ms, throughput = 275.378 tokens/s
 
 One sunny day, a little girl named Lily went to the park with her mom. They saw a big tree with lots of shade under it. Lily's mom said, "Let's sit in the shade and have a snack." Lily was happy and said, "Yay! I love snacks!"
 While they were eating, Lily saw a boy playing with a ball. She wanted to play too, so she asked him, "Can I play with you?" The boy said, "Sure! Let's play together!" They played for a while and had lots of fun.
 After a while, Lily's mom said, "It's time to go home now." Lily was sad because she wanted to play more. But her mom said, "Don't worry, we can come back to the park another day." Lily smiled and said, "Okay, I'll be patient and wait for another day."
-Sample 15 (Result Validation PASS): 206 tokens in 711 ms, throughput = 289.733 tokens/s
+Sample 15 (Result Validation PASS): 206 tokens in 712 ms, throughput = 289.326 tokens/s
 
 In a bustling town called Harmonyville, the happiest place in the world. Everywhere she went, people smiled and waved. One day, a little girl named Lily was walking in the town square. She saw a man with a big smile on his face and he looked very happy. 
 Lily went up to the man and said, "Hi! What's your name?"
@@ -125,14 +125,14 @@ Mr. Smith explained, "A lecture is when someone talks about something important 
 Lily thought about it for a moment and said, "I want to be kind to others too!"
 Mr. Smith smiled and said, "That's a great idea! Always remember to be kind and help others whenever you can."
 Lily nodded and continued on her way, feeling happy and excited to learn more about the world around her.
-Sample 16 (Result Validation PASS): 241 tokens in 862 ms, throughput = 279.582 tokens/s
+Sample 16 (Result Validation PASS): 241 tokens in 864 ms, throughput = 278.935 tokens/s
 
 Once upon a time in a lush green forest, there lived a little girl named Lucy. She was three years old and loved to explore the forest. One day, Lucy was walking through the forest when she saw a big, scary bear. She was so scared that she started to cry.
 The bear saw Lucy crying and said, "Don't be scared, little one. I won't hurt you." Lucy was still scared, but she stopped crying and looked at the bear.
 The bear said, "I'm here to help you. I can show you the way out of the forest." Lucy was still scared, but she nodded her head.
 The bear showed Lucy the way out of the forest and she thanked him. She said goodbye and ran off, feeling much better.
 The bear watched her go and smiled. He was glad that he could help Lucy. He knew that he had done a good job.
-Sample 17 (Result Validation PASS): 201 tokens in 693 ms, throughput = 290.043 tokens/s
+Sample 17 (Result Validation PASS): 201 tokens in 691 ms, throughput = 290.883 tokens/s
 
 Little Billy loved cookies! He was always asking his mom for one. One day, his mom said, "Billy, I have a surprise for you!" She took him to the kitchen and showed him a big plate of cookies. "Wow!" said Billy, "Can I have one?" His mom said, "Yes, but only one. We don't want to spoil your dinner."
 Billy took a cookie and ate it. It was so yummy! He wanted another one, but he remembered what his mom said. He didn't want to spoil his dinner. So, he only took one cookie and put the rest back on the plate.
@@ -142,7 +142,7 @@ Sample 18 (Result Validation PASS): 223 tokens in 784 ms, throughput = 284.439 t
 In a small town named Harmonyville, there lived a little girl named Lily. She loved to play with her toys and her friends. One day, Lily's mom told her that they were going to visit her grandma who lived far away. Lily was excited to see her grandma, but she was also a little scared because she had never been on a long trip before.
 On the day of the trip, Lily and her mom got into the car and started driving. Lily looked out the window and saw lots of trees and houses passing by. She asked her mom, "Are we there yet?" Her mom replied, "Not yet, but we will be soon."
 After a while, Lily started to feel tired and her legs hurt. She said to her mom, "I want to go home now." Her mom said, "We will be there soon, don't worry." Finally, they arrived at grandma's house. Lily was so happy to see her grandma and she gave her a big hug. They spent the day playing games and eating cookies. Lily was no longer scared because she knew that she was safe with her grandma.
-Sample 19 (Result Validation PASS): 251 tokens in 915 ms, throughput = 274.317 tokens/s
+Sample 19 (Result Validation PASS): 251 tokens in 908 ms, throughput = 276.432 tokens/s
 
 in a lush green valley,, there lived a little girl named Lucy. She was three years old and loved to explore the valley. One day, she decided to go for a walk and explore the valley.
 As she walked, she noticed a big, tall tree. She wanted to climb it, but it was too high. She tried to reach the top, but she couldn't.
@@ -150,7 +150,7 @@ Suddenly, she heard a voice. It was a friendly voice, and it said, "I can help y
 Then, she noticed a little bird perched on a branch. The bird said, "I can help you reach the top of the tree. Just hold onto my wings and I'll take you up."
 Lucy was so excited. She held onto the bird's wings and they flew up to the top of the tree. When they reached the top, Lucy was so happy. She thanked the bird and said goodbye.
 The bird flew away, and Lucy stayed in the tree for a while. She looked around and saw the beautiful valley below. She was so happy that she had reached the top of the
-Sample 20 (Result Validation PASS): 255 tokens in 933 ms, throughput = 273.312 tokens/s
+Sample 20 (Result Validation PASS): 255 tokens in 925 ms, throughput = 275.676 tokens/s
 
 Little Alice was known throughout her neighborhood for her unique appetite. Everywhere she went, she was always looking for something new and exciting to try.
 One day, Alice was walking around her neighborhood when she noticed a big, shiny red apple sitting on the ground. She was so excited that she quickly picked it up and took a big bite.
@@ -161,7 +161,7 @@ Alice was surprised. She turned around and saw the little boy standing there.
 "I'm sorry," she said. "I didn't know it was yours."
 The little boy smiled. "That's okay," he said. "I'm glad you like it. I'm sure you'll find something else to eat."
 Alice thanked the little boy and continued on her way. She was so happy that she had found something unique and delicious to eat.
-Sample 21 (Result Validation PASS): 219 tokens in 771 ms, throughput = 284.047 tokens/s
+Sample 21 (Result Validation PASS): 219 tokens in 767 ms, throughput = 285.528 tokens/s
 
 In a bustling city lived two best friends, Jack and Jill. They were always together and loved to explore the city. One day, Jack and Jill decided to go on an adventure.
 Jack said, "Let's go explore the city!"
@@ -169,14 +169,14 @@ Jill replied, "Yes, let's go!"
 So, they set off on their adventure. They walked around the city and saw many interesting things. They saw tall buildings, busy streets and lots of people.
 Suddenly, Jack and Jill heard a loud noise. It was a big truck coming towards them. Jack and Jill were scared and tried to run away, but it was too late. The truck hit them and they both died.
 The city was very sad. They had lost their best friend Jack and Jill. They never went on an adventure again.
-Sample 22 (Result Validation PASS): 183 tokens in 628 ms, throughput = 291.401 tokens/s
+Sample 22 (Result Validation PASS): 183 tokens in 618 ms, throughput = 296.117 tokens/s
 
 It was a bright and sunny day when Timmy and his friends found a curious article about voting in the United States. They were all very excited to read it and learn about the world.
 Timmy's friend, Sarah, said, "Let's read it together!"
 Timmy replied, "Yes, let's do it!"
 So they all sat down and started to read the newspaper. They read about all the different countries and people living in them. They were so curious about what it would be like to visit all those countries.
 After they finished reading, they all agreed that it was a great idea to explore the world and learn about all the different countries. They all agreed that it was a great idea and they were all very excited to start their adventure.
-Sample 23 (Result Validation PASS): 162 tokens in 540 ms, throughput = 300 tokens/s
+Sample 23 (Result Validation PASS): 162 tokens in 541 ms, throughput = 299.445 tokens/s
 
 Once upon a time in the bustling town of Beertopia, there lived a little girl named Lucy. She was three years old and loved to explore the world around her.
 One day, Lucy was walking through the park when she saw a big, shiny truck. She was so excited that she ran up to it and asked the driver, "What are you doing?"
@@ -187,14 +187,14 @@ Lucy was so happy that she jumped up and down. She couldn't wait to go to the pa
 The driver loaded up the truck with all the supplies and drove off to the party. Lucy was so excited that she couldn't stop smiling.
 When they arrived, Lucy saw all the people and the big, shiny truck. She was so happy that she ran around and played with all the other kids.
 It was the best day ever!
-Sample 24 (Result Validation PASS): 255 tokens in 933 ms, throughput = 273.312 tokens/s
+Sample 24 (Result Validation PASS): 255 tokens in 925 ms, throughput = 275.676 tokens/s
 
 In the year 1789, there was a very special day. It was the day of the big celebration. Everyone was so excited!
 The celebration was so much fun. There were lots of games, music and yummy food. Everyone was having a great time.
 But then something happened. One of the games was too hard for the 3 year old. He was so sad and he started to cry.
 But then his mommy came over and gave him a big hug. She said, "It's okay, sweetheart. You don't have to do anything hard. You can still have fun and celebrate the year."
 The 3 year old smiled and hugged his mommy back. He was so happy that he could still celebrate the year. He had lots of fun and he was so proud of himself.
-Sample 25 (Result Validation PASS): 182 tokens in 625 ms, throughput = 291.2 tokens/s
+Sample 25 (Result Validation PASS): 182 tokens in 615 ms, throughput = 295.935 tokens/s
 
 In a bustling city full of towering buildings and whizzing cars, there was a little girl named Lucy. She was only three years old and loved to explore. One day, she decided to go on an adventure.
 She walked through the city, looking at all the tall buildings and bright lights. She was so excited!
@@ -205,13 +205,13 @@ Lucy thought for a moment and then said, "Maybe I can help you. I'm very good at
 The man smiled and said, "That would be great! Thank you, Lucy."
 So Lucy worked hard and soon the building was fixed. The man was so happy and thanked Lucy for her help.
 Lucy smiled and said, "You're welcome!" She was so proud of herself for helping the man.
-Sample 26 (Result Validation PASS): 245 tokens in 886 ms, throughput = 276.524 tokens/s
+Sample 26 (Result Validation PASS): 245 tokens in 879 ms, throughput = 278.726 tokens/s
 
 In a small town named Greenville, there lived a little girl named Lily. She loved to play outside with her friends. One day, while playing, she saw a big, green tree. Lily had never seen a tree like this before. She thought it was very special.
 Lily ran to her friend Tom and said, "Tom, come see the big, green tree! It's so pretty!" Tom came running and looked at the tree. He said, "Wow, Lily! That is a very special tree. I think it has a secret."
 Lily and Tom decided to ask the tree what the secret was. They asked, "Tree, can you tell us your secret?" The tree did not say anything. Lily and Tom were sad, but they did not give up. They knew that one day, the tree would tell them its secret.
 Days went by, and Lily and Tom kept playing near the big, green tree. One day, they saw a little door on the tree. They opened the door and found a small, green room inside. In the room, there was a tiny, green man. The green man said, "Hello, Lily and Tom! I am the tree'
-Sample 27 (Result Validation PASS): 255 tokens in 931 ms, throughput = 273.899 tokens/s
+Sample 27 (Result Validation PASS): 255 tokens in 925 ms, throughput = 275.676 tokens/s
 
 Little Timmy had never been on such a big adventure before! He was so excited to explore the world around him. He was walking through the park when he saw a big, tall tree. He wanted to climb it, but he was too small.
 Timmy's mom saw him looking up at the tree and said, "Do you want to climb that tree, Timmy?"
@@ -221,7 +221,7 @@ Timmy tried to climb the tree, but he couldn't quite make it. He was getting fru
 Timmy kept trying and trying, and eventually he made it to the top of the tree! He was so proud of himself. He looked down and saw his mom smiling at him.
 "You did it, Timmy!" she said. "You're so brave and strong."
 Timmy smiled and said, "I'm not scared anymore. I'm not scared of anything!"
-Sample 28 (Result Validation PASS): 255 tokens in 932 ms, throughput = 273.605 tokens/s
+Sample 28 (Result Validation PASS): 255 tokens in 925 ms, throughput = 275.676 tokens/s
 
 In a bustling town full of screens and buttons, there was a little girl named Lucy. She was only three years old and loved to explore. One day, she was walking around the town when she noticed a big, shiny screen. She was so excited and ran over to it.
 "What is this?" she asked.
@@ -233,7 +233,7 @@ Lucy pushed the button and suddenly the screen lit up. She saw a beautiful rainb
 The old man smiled and said, "You can push the button again if you want."
 Lucy smiled and pushed the button again. She watched the screen light up and saw a big, green tree. She was so happy that she ran around the screen and laughed.
 The old man smiled and said, "You can push the button again
-Sample 29 (Result Validation PASS): 255 tokens in 932 ms, throughput = 273.605 tokens/s
+Sample 29 (Result Validation PASS): 255 tokens in 930 ms, throughput = 274.194 tokens/s
 
 In a bustling city filled with towering buildings and whizzing cars, the sun shone brightly and the birds sang sweetly.
 One day, a little girl named Lucy was walking through the city with her mom. As they walked, Lucy noticed a tall tower in the distance. She asked her mom, "What is that?"
@@ -242,14 +242,14 @@ Lucy was amazed. She wanted to get closer to the tower, so she asked her mom if 
 When they got closer, Lucy noticed that the tower was very dirty. She asked her mom why it was so dirty. Her mom said, "It is because the people who live in the tower have been very busy and they haven't had time to clean it."
 Lucy was sad to see the tower so dirty. She asked her mom if they could help clean it. Her mom said yes, and they started to clean the tower.
 When they were done, the tower was shining and clean. Lucy was so happy that she had helped make the tower look nice again.
-Sample 30 (Result Validation PASS): 253 tokens in 922 ms, throughput = 274.403 tokens/s
+Sample 30 (Result Validation PASS): 253 tokens in 916 ms, throughput = 276.201 tokens/s
 
 Little Billy had many questions about the world around him. He wanted to know why the sky was blue, why the grass was green, and why the birds sang. One day, he asked his mom why the sky was blue.
 His mom smiled and said, "The sky is blue because of the way the sun's light shines through the air. It's a beautiful sight to see."
 Little Billy was so excited to learn more. He asked, "Can I go outside and see the sun?"
 His mom said, "Yes, but you must be careful. The sun is very hot and can hurt you if you get too close."
 Little Billy nodded and ran outside. He looked up at the sky and saw the sun shining brightly. He smiled and said, "I love the sun!"
-Sample 31 (Result Validation PASS): 173 tokens in 584 ms, throughput = 296.233 tokens/s
+Sample 31 (Result Validation PASS): 173 tokens in 578 ms, throughput = 299.308 tokens/s
 
 At Roosevelt High School, there was a classroom full of children. Every day, the teacher would teach the children something new. One day, the teacher said, "Today, we are going to learn about animals."
 The children were excited. They all gathered around the blackboard. The teacher showed them pictures of different animals. Some were big, some were small. Some were furry, some were scaly.
@@ -257,12 +257,12 @@ The teacher said, "Let's learn about the animals. Can you tell me what sound a l
 The children all shouted, "Lion!"
 The teacher smiled and said, "Very good! Now, let's learn about the different animals."
 The children listened carefully as the teacher taught them about different animals. They learned about elephants, giraffes, and monkeys. They were all very happy to learn something new.
-Sample 32 (Result Validation PASS): 189 tokens in 648 ms, throughput = 291.667 tokens/s
+Sample 32 (Result Validation PASS): 189 tokens in 642 ms, throughput = 294.393 tokens/s
 
 Once upon a time in a small town named Budgetville, there lived a little girl named Lily. She loved to play with her toys and her friends. One day, Lily's mom told her that they were going to visit her grandma who lived far away. Lily was excited to see her grandma, but she was also a little scared because she had never been on a long trip before.
 As they were driving, Lily's mom told her that they were going to see a big mountain that was very high. Lily was amazed by the mountain and couldn't wait to see it up close. When they arrived, Lily saw that the mountain was covered in snow and ice. She was so happy to see it, but she was also a little scared because it was so high.
 Lily's mom told her that they were going to climb the mountain together. Lily was nervous, but she trusted her mom. They started climbing and it was hard work, but they kept going. Finally, they reached the top and Lily was so proud of herself. She looked out at the beautiful view and felt very happy. She knew that she had succeeded in climbing the
-Sample 33 (Result Validation PASS): 255 tokens in 932 ms, throughput = 273.605 tokens/s
+Sample 33 (Result Validation PASS): 255 tokens in 930 ms, throughput = 274.194 tokens/s
 
 Emma and her little brother Tim were playing on the beach, looking for shells. Suddenly, Emma saw something shiny in the sand. She bent down and picked it up. It was a beautiful shell!
 "Look Tim!" Emma said, holding it up. "It's so pretty!"
@@ -274,7 +274,7 @@ They ran as fast as they could, but the wave was too fast. It knocked them down 
 Tim looked sad. "It's okay," he said. "We can find another one."
 But Emma shook her head. "No, that shell was special," she said. "It was the only one we had."
 And so, Emma and Tim went home without their special shell.
-Sample 34 (Result Validation PASS): 230 tokens in 821 ms, throughput = 280.146 tokens/s
+Sample 34 (Result Validation PASS): 230 tokens in 814 ms, throughput = 282.555 tokens/s
 
 Once upon a time in the bustling city of Knowville, there lived a little girl named Lucy. She was only three years old and loved to explore the world around her.
 One day, Lucy was walking through the park when she saw a big, shiny red balloon. She was so excited that she ran over to it and grabbed it.
@@ -285,7 +285,7 @@ Lucy nodded her head and the man handed her the balloon.
 "Thank you!" she said.
 The man smiled and said, "You're welcome. I'm glad you like it."
 Lucy hugged the balloon and ran off to show her friends. She was so happy that she had found such a cool balloon.
-Sample 35 (Result Validation PASS): 220 tokens in 778 ms, throughput = 282.776 tokens/s
+Sample 35 (Result Validation PASS): 220 tokens in 773 ms, throughput = 284.605 tokens/s
 
 In a small village in Mexico, there lived a little girl named Lucy. She was only three years old and loved to explore the world around her. One day, she decided to go for a walk in the forest.
 As she walked, she noticed a big, old tree. She stopped and looked up at it. It was so tall and strong! She wanted to climb it, but she was too small.
@@ -293,14 +293,14 @@ Suddenly, she heard a voice. It was coming from the tree! "Hello, Lucy," it said
 Lucy was so excited! She said yes and the tree started to move. It was like magic! It lifted her up and she was able to climb the tree.
 When she reached the top, she saw a beautiful view of the village. She was so happy! She thanked the tree for helping her and then she went back home.
 From that day on, Lucy always remembered the magic tree that helped her climb the big, old tree.
-Sample 36 (Result Validation PASS): 219 tokens in 773 ms, throughput = 283.312 tokens/s
+Sample 36 (Result Validation PASS): 219 tokens in 767 ms, throughput = 285.528 tokens/s
 
 Once upon a sunny day, a little girl named Lily went to the park with her mom. They saw a big tree with lots of leaves. Lily wanted to climb the tree, but her mom said it was too high. 
 Suddenly, a boy named Max came over and said, "I can climb the tree! Watch me!" Max climbed up the tree and then he twisted his body to reach a branch. 
 Lily said, "Wow, Max! You're so good at climbing!" Max smiled and said, "Thanks, Lily! Do you want to try?" 
 Lily was scared, but she wanted to be brave like Max. She took a deep breath and started to climb. It was hard, but she kept going. When she finally reached the branch, she felt so proud of herself. 
 Max said, "Great job, Lily! You're a brave girl!" Lily smiled and said, "Thanks, Max! I'm glad I tried." They both sat on the branch and enjoyed the sunny day together.
-Sample 37 (Result Validation PASS): 235 tokens in 848 ms, throughput = 277.123 tokens/s
+Sample 37 (Result Validation PASS): 235 tokens in 836 ms, throughput = 281.1 tokens/s
 
 Once upon a time in the bustling town of SciTechville, there lived a little girl named Lucy. She was three years old and loved to explore the world around her.
 One day, Lucy was walking through the park when she saw a big, shiny, red balloon. She was so excited that she ran over to it and grabbed it.
@@ -311,12 +311,12 @@ Lucy turned around and saw a man. He was wearing a big, blue hat and had a big s
 The man smiled. "That's okay," he said. "You can keep it. I have lots of balloons at home."
 Lucy was so happy that she hugged the man. Then, she ran off to show her friends her new balloon.
 The end.
-Sample 38 (Result Validation PASS): 227 tokens in 809 ms, throughput = 280.593 tokens/s
+Sample 38 (Result Validation PASS): 227 tokens in 801 ms, throughput = 283.396 tokens/s
 
 It was a sunny day and Timmy was walking with his robot friend, Robby. They were walking through the park when they saw a big, scary dog. Timmy was scared and wanted to run away, but Robby said, "Don't worry, I'll protect you."
 Robby walked up to the dog and said, "Hello, doggy. What's your name?" The dog barked and growled, but Robby didn't back down. He stood his ground and the dog eventually ran away.
 Timmy was amazed and said, "Wow, Robby! You're so brave!" Robby smiled and said, "I'm just doing my job. I'm a robot, but I'm also a friend." Timmy hugged Robby and said, "I'm glad you're my friend. You're not scary at all." Robby blushed and said, "Thanks, Timmy. I'm glad we're friends too."
-Sample 39 (Result Validation PASS): 220 tokens in 779 ms, throughput = 282.413 tokens/s
+Sample 39 (Result Validation PASS): 220 tokens in 771 ms, throughput = 285.344 tokens/s
 
 It was a bright and sunny day when Little Timmy decided to visit his friend, Sarah. He was so excited to see her and couldn't wait to play.
 When he arrived, Sarah was already in the garden. She was picking some flowers and singing a song.
@@ -328,7 +328,7 @@ Little Timmy was so excited to see Sarah's reaction. He couldn't wait to see wha
 Sarah took the apple and said, "Let's go inside and have a snack. I have some delicious apples in the kitchen."
 Little Timmy was so happy to hear that. He followed Sarah inside and they both enjoyed the delicious apples.
 Little Timmy was so glad that he had received the apple from Sarah. It was the best present ever!
-Sample 40 (Result Validation PASS): 244 tokens in 884 ms, throughput = 276.018 tokens/s
+Sample 40 (Result Validation PASS): 244 tokens in 876 ms, throughput = 278.539 tokens/s
 
 In the heart of London, there was a little girl named Lily. She was three years old and loved to explore the world around her. One day, she was walking in the park when she saw a big, red balloon. She was so excited and ran over to it.
 "Can I have it?" she asked her mom.
@@ -338,52 +338,52 @@ Lily was disappointed, but she kept looking around. Suddenly, she saw a man with
 Lily was so excited that she didn't listen to the man. She grabbed the balloon and started running around with it. Suddenly, the balloon popped and Lily started to cry.
 "I'm sorry," the man said. "But you should have listened to me. Now you have to learn to be careful with things that are too big for you."
 Lily learned her less
-Sample 41 (Result Validation PASS): 255 tokens in 933 ms, throughput = 273.312 tokens/s
+Sample 41 (Result Validation PASS): 255 tokens in 927 ms, throughput = 275.081 tokens/s
 
 In a bustling town filled with curious creatures called WeeWebbles, the most popular one of all. Wee Stone was a very special creature, who loved to explore and discover new things.
 One day, Wee Stone was walking through the town when he noticed a strange looking box. He was curious and wanted to know what was inside, so he decided to open it.
 When Ie Stone opened the box, he was surprised to find a beautiful necklace inside. He was so excited that he decided to take it home with him.
 When Ie Stone arrived home, he showed the necklace to his family. They were all amazed and asked him where he had found it. Wee Stone told them about the box and how he had opened it.
 Wee Stone's family was so proud of him for being so brave and adventurous. They told him that he was a very popular person in the town. Wee Stone was so happy that he had found the necklace and he wore it proudly.
-Sample 42 (Result Validation PASS): 215 tokens in 757 ms, throughput = 284.016 tokens/s
+Sample 42 (Result Validation PASS): 215 tokens in 750 ms, throughput = 286.667 tokens/s
 
 In a bright and sunny forest, there lived a little girl named Lily. She loved to play with her friends, the animals. One day, while playing, she found a big, shiny rock. Lily was very happy and showed it to her friends.
 "Look what I found!" said Lily. "It's so pretty!" Her friends looked at the rock and smiled. They all wanted to play with it. But Lily didn't want to share. She wanted to keep the rock all to herself.
 Her friends were sad and went away. Lily felt lonely and didn't know what to do. Then, she remembered her mom's words, "Sharing is caring." Lily thought about it and decided to share the rock with her friends.
 She went to find her friends and said, "I'm sorry. Let's all play with the rock together." Her friends were happy and they all played with the rock. They had so much fun and Lily learned that sharing is better than keeping things all to herself.
 From that day on, Lily always shared her toys with her friends. They all played happily together in the bright and sunny forest. And L
-Sample 43 (Result Validation PASS): 255 tokens in 936 ms, throughput = 272.436 tokens/s
+Sample 43 (Result Validation PASS): 255 tokens in 926 ms, throughput = 275.378 tokens/s
 
 Sam and Alex were two best friend robots who loved helping humans find their favorite things on the internet. One day, they decided to go on a special mission to find a hidden treasure.
 Sam and Alex searched high and low, but they couldn't find the treasure. Suddenly, they heard a voice coming from the computer. It was a friendly voice that said, "I can help you find the treasure. Just press the print button."
 Sam and Alex were so excited! They pressed the print button and the voice said, "The treasure is hidden in the garden. Follow the clues and you will find it."
 Sam and Alex followed the clues and soon they found the hidden treasure. They were so happy and excited! They thanked the voice for helping them find the treasure.
-Sample 44 (Result Validation PASS): 170 tokens in 573 ms, throughput = 296.684 tokens/s
+Sample 44 (Result Validation PASS): 170 tokens in 567 ms, throughput = 299.824 tokens/s
 
 In a small village lived a friendly man named Tim. Tim loved to help people. One day, he saw a little girl named Sue who was sad. Sue had lost her toy. Tim wanted to help Sue find her toy.
 Tim asked Sue, "What does your toy look like?" Sue said, "It is a small, red ball." Tim and Sue looked all around the village for the red ball. They looked near the trees, by the river, and in the park.
 Finally, they found the red ball near a big rock. Sue was so happy! She said, "Thank you, Tim!" Tim was happy too because he could help Sue. From that day on, Tim and Sue became good friends and played together in the village.
-Sample 45 (Result Validation PASS): 158 tokens in 526 ms, throughput = 300.38 tokens/s
+Sample 45 (Result Validation PASS): 158 tokens in 522 ms, throughput = 302.682 tokens/s
 
 It was a bright and sunny day, and the birds were singing in the trees. Little Jack was playing in the garden with his toy truck. He was having so much fun!
 Suddenly, he heard a loud noise. He looked up and saw a big, black bird flying in the sky. It was so high up that Jack couldn't see it anymore.
 Jack was so excited. He wanted to get closer to the bird. He ran to the fence and tried to climb it. But it was too high.
 Jack was sad. He wanted to get closer to the bird. Then he had an idea. He ran to the kitchen and grabbed a big bowl of popcorn. He ran back to the fence and threw the popcorn up in the air.
 The bird saw the popcorn and flew down to eat it. Jack was so happy! He had managed to get close to the bird. He watched it fly away and smiled.
-Sample 46 (Result Validation PASS): 209 tokens in 731 ms, throughput = 285.91 tokens/s
+Sample 46 (Result Validation PASS): 209 tokens in 725 ms, throughput = 288.276 tokens/s
 
 Once, little Timmy decided he wanted to learn more about St. Moritz, he asked his mom to explain what a tutor was. His mom smiled and said, "A tutor is someone who helps you learn new things. For example, a tutor is someone who teaches you about numbers and letters."
 Timmy was excited and asked, "Can I have a tutor?" His mom said, "Yes, of course you can. We can find one for you."
 So, Timmy and his mom went to the store to find a tutor. They looked at all the different tutores, but none of them seemed quite right. Finally, they found one that was just right. It was a tutor who was very kind and patient.
 The tutor was very helpful. She taught Timmy about numbers and letters and even showed him how to count to ten. Timmy was so happy to learn new things.
 At the end of the day, Timmy thanked his mom for finding him a tutor. He said, "Thank you for finding me a helpful tutor. I'm so glad I can learn new things!"
-Sample 47 (Result Validation PASS): 240 tokens in 866 ms, throughput = 277.136 tokens/s
+Sample 47 (Result Validation PASS): 240 tokens in 858 ms, throughput = 279.72 tokens/s
 
 In a small town named Autoville, there lived a little girl named Lily. Lily loved to play outside with her friends. One day, while playing, Lily found a big, shiny rock. She showed it to her friends, and they all thought it was very pretty.
 Lily's mom saw the rock and said, "Lily, this rock has a lot of value. It can help us make our town a better place." Lily didn't understand what "value" meant, but she knew her mom was happy.
 One day, a man came to the town. He was a rich man who wanted to take the shiny rock away. He said, "I will give you lots of money for this rock." Lily's mom told the man, "No, this rock is very special to us. We value it a lot." The rich man was sad, but he understood.
 Lily and her friends learned that it is important to value the things we love. They also learned that being rich doesn't mean you can't be kind and helpful. And so, Lily and her friends lived happily in their town, always remembering to value the things they loved.
-Sample 48 (Result Validation PASS): 254 tokens in 930 ms, throughput = 273.118 tokens/s
+Sample 48 (Result Validation PASS): 254 tokens in 924 ms, throughput = 274.892 tokens/s
 
 Once upon a time in the land of Marketville, there lived a little girl named Lucy. She was three years old and loved to explore the world around her.
 One day, Lucy was walking through the forest when she saw a big, scary bear. She was so scared that she started to cry.
@@ -392,7 +392,7 @@ Lucy was still scared, but she stopped crying and said, "I'm scared of you."
 The bear smiled and said, "I'm not scary. I'm just a big, friendly bear. Would you like to be my friend?"
 Lucy smiled and said, "Yes, I would like that very much."
 The bear and Lucy became friends and they explored the land ofville together. They had lots of fun and Lucy was no longer scared.
-Sample 49 (Result Validation PASS): 197 tokens in 681 ms, throughput = 289.28 tokens/s
+Sample 49 (Result Validation PASS): 197 tokens in 675 ms, throughput = 291.852 tokens/s
 
 Little Crabby and Clawdia were two curious crabs who lived in different harbors near Hooper Bay. One day, they decided to explore the harbor and see what they could find.
 Crabby and Clareia scurried around the harbor, looking for interesting things. Suddenly, they heard a loud noise coming from the other side of the harbor.
@@ -400,7 +400,7 @@ Crabby and Clareia were scared, so they quickly ran back to their homes. When th
 Crabby and Clareia were curious, so they decided to go back to the harbor and see what was happening. When they got there, they saw that the boat was full of people who were celebrating.
 Crabby and Clareia were so excited to see the people celebrating that they joined in the celebration. They danced and sang and had a great time.
 Crabby and Clareia were so happy that they had been brave enough to explore the harbor and find out what was happening. They had a wonderful time celebrating with the people.
-Sample 50 (Result Validation PASS): 248 tokens in 911 ms, throughput = 272.228 tokens/s
+Sample 50 (Result Validation PASS): 248 tokens in 894 ms, throughput = 277.405 tokens/s
 
 In a small, colorful house lived a curious little boy named Juanito. He loved to explore and learn new things. One day, he decided to go on an adventure. He grabbed his backpack and set off.
 As he walked, he noticed a big, tall tree. He stopped and looked up. He was amazed by how high it was. He wanted to climb it, but he was too small.
@@ -410,33 +410,33 @@ The voice said, "Okay, but you have to be careful. Don't go too high."
 Juan was careful as he climbed the tree. He was so happy when he reached the top. He looked around and saw the most beautiful view. He was so proud of himself.
 The voice said, "Well done, taking your time and being careful. You did a great job!"
 Juan smiled and said, "Thank you!" He was so happy that he had been able to climb the tree. He was proud of himself and he
-Sample 51 (Result Validation PASS): 255 tokens in 934 ms, throughput = 273.019 tokens/s
+Sample 51 (Result Validation PASS): 255 tokens in 932 ms, throughput = 273.605 tokens/s
 
 In a small town lived a curious little girl named Lily. She loved to explore and learn new things. One day, she saw a big tree with a hole in it. She wanted to know what was inside the hole.
 Lily asked her friend, Tom, "What do you think is in the hole?" Tom said, "I don't know, but I heard it's something fun. Let's find out!" They both went to the tree and looked inside the hole.
 Inside the hole, they found a small bird. The bird was sad because it could not fly. Lily and Tom wanted to help the bird. They decided to support the bird by giving it food and water. They took care of the bird until it was strong enough to fly again.
 The bird was very happy and thanked Lily and Tom for their help. It flew away, singing a beautiful song. Lily and Tom felt proud that they could support the bird and make it happy. They knew that being curious and kind was a good thing to do.
-Sample 52 (Result Validation PASS): 220 tokens in 779 ms, throughput = 282.413 tokens/s
+Sample 52 (Result Validation PASS): 220 tokens in 771 ms, throughput = 285.344 tokens/s
 
 Little Rexy the dinosaur loved watching football with his family. He was always so excited when they would play. One day, Rexy's family decided to take him to the park. When they arrived, Rexy saw a big football field. He was so excited that he ran over to it.
 Rexy's mom said, "Rexy, be careful! Don't go too close to the football field."
 But Rexy was too excited to listen. He ran around the field, kicking the football with his feet. Suddenly, he heard a loud noise. He looked up and saw a big, scary dinosaur coming towards him.
 Rexy was so scared that he started to cry. His mom ran over and hugged him tight. She said, "It's okay, Rexy. That dinosaur won't hurt you. He just wants to play football with us."
 Rexy was still scared, but he was also excited. He watched as the dinosaur and his family played football together. Rexy was so happy that he forgot all about being scared.
-Sample 53 (Result Validation PASS): 247 tokens in 898 ms, throughput = 275.056 tokens/s
+Sample 53 (Result Validation PASS): 247 tokens in 890 ms, throughput = 277.528 tokens/s
 
 In a small town named Mathville, there was a very popular girl named Lily. She loved to play with her friends and learn new things. One day, Lily and her friends were playing in the park when they saw a big tree.
 Lily said, "Let's climb the tree!" Her friends agreed, and they all started to climb. As they climbed higher, they saw a big bird's nest. Inside the nest, there was a baby bird. The baby bird looked sad and scared.
 Lily wanted to help the baby bird, so she said, "Don't worry, little bird. We will help you." She carefully picked up the baby bird and climbed down the tree. When they reached the ground, Lily's friends were very happy. They all clapped and cheered for Lily.
 Lily took the baby bird home and gave it food and water. The baby bird started to feel better. Lily's friends came to visit and they all played together. The baby bird was now popular too, and everyone in the town loved it.
 From that day on, Lily and her friends took care of the baby bird. They learned that helping others can make
-Sample 54 (Result Validation PASS): 255 tokens in 933 ms, throughput = 273.312 tokens/s
+Sample 54 (Result Validation PASS): 255 tokens in 932 ms, throughput = 273.605 tokens/s
 
 In a bright, sunny day, a little girl named Lily went to the park. She saw a big tree with a swing. Lily wanted to play on the swing, but she was too small. She felt sad.
 A kind boy named Tom saw Lily and asked, "Why are you sad?" Lily said, "I want to play on the swing, but I am too small." Tom had an idea. He said, "Let's find a way to help you."
 Tom and Lily looked around the park. They saw a big box. They put the box under the tree. Tom said, "Now you can stand on the box and reach the swing." Lily stood on the box and got on the swing. She was so happy.
 Lily and Tom played on the swing all day. They had so much fun. They learned that when they work together, they can solve problems. And that was the day Lily and Tom became best friends.
-Sample 55 (Result Validation PASS): 204 tokens in 711 ms, throughput = 286.92 tokens/s
+Sample 55 (Result Validation PASS): 204 tokens in 704 ms, throughput = 289.773 tokens/s
 
 Once upon a time in Writingville, there was a little girl named Lucy. She was three years old and loved to write stories. One day, Lucy was writing a story about a magical land. She was so excited to write it!
 Suddenly, Lucy heard a loud noise outside. She looked out the window and saw a big, scary monster! Lucy was so scared that she ran to her mom.
@@ -445,7 +445,7 @@ Suddenly, Lucy heard a loud noise outside. She looked out the window and saw a b
 Lucy felt better and went back to writing her story. She wrote about the big, friendly dog and how he helped her find her way home. When she was finished, she showed it to her mom.
 "That's a great story, Lucy!" her mom said. "You're such a good writer!"
 Lucy smiled and felt proud of herself. She knew that she could write stories and make people happy.
-Sample 56 (Result Validation PASS): 226 tokens in 805 ms, throughput = 280.745 tokens/s
+Sample 56 (Result Validation PASS): 226 tokens in 797 ms, throughput = 283.563 tokens/s
 
 In a bustling library filled with books, a young girl named Lily was looking for something to read. She spotted a book with a beautiful cover and decided to take it home.
 When she got home, Lily opened the book and started to read. She was so excited to find out what the story was about.
@@ -454,14 +454,14 @@ Lily was scared and started to cry. She ran to her mom and said, "Mommy, there's
 Her mom hugged her and said, "Don't worry, Lily. I'll take care of it."
 Lily's mom went outside and saw the monster. She grabbed a big stick and waved it at the monster. The monster ran away and Lily was safe.
 Lily was so relieved and thanked her mom for taking care of the monster. She went back to reading her book and was happy to be safe and sound.
-Sample 57 (Result Validation PASS): 246 tokens in 893 ms, throughput = 275.476 tokens/s
+Sample 57 (Result Validation PASS): 246 tokens in 885 ms, throughput = 277.966 tokens/s
 
 Deep in the heart of Mr. Cedric's classroom, he was feeling very sad. He had been feeling this way for weeks and he was feeling very lonely.
 One day, Mr. Cedric's teacher noticed that he was feeling down and asked him why. Mr. Ced metal said that he was feeling lonely and he didn't know how to make friends.
 The teacher smiled and said, "I know just the thing to help you feel better. I'll give you a special treat every day and you can share it with the other kids in your classroom. That way, you won't feel so lonely anymore."
 Mr. Ced metal was so excited and he thanked his teacher. Every day, he shared his treat with the other kids and soon he made lots of friends.
 The moral of the story is that sharing can help us make friends and make us feel less lonely.
-Sample 58 (Result Validation PASS): 198 tokens in 686 ms, throughput = 288.63 tokens/s
+Sample 58 (Result Validation PASS): 198 tokens in 679 ms, throughput = 291.605 tokens/s
 
 Once upon a time in the land of Latvia, there was a little girl named Lucy. She was three years old and loved to explore. One day, she decided to go on an adventure.
 She walked through the forest and soon came across a big, old tree. She stopped and looked up at the tree. It was so tall and strong!
@@ -471,14 +471,14 @@ The tree smiled. "Yes, I can. But first, you must be brave and not be afraid. I 
 Lucy was a bit scared, but she was brave. She followed the tree's advice and soon she found something special. It was a beautiful, shiny stone.
 The tree said, "This is a special stone. It will help you to be brave and strong. Now, take it with you and use it whenever you need it."
 Lucy thanked the tree and went on her way. She was
-Sample 59 (Result Validation PASS): 255 tokens in 934 ms, throughput = 273.019 tokens/s
+Sample 59 (Result Validation PASS): 255 tokens in 925 ms, throughput = 275.676 tokens/s
 
 In the heart of the desert lived a kind and clever girl named Aisha. She was always looking for ways to help others. One day, she noticed a small bird that was stuck in a bush. She quickly ran over to help it.
 Aisha carefully pulled the bird out of the bush and held it in her hands. She looked at it and said, "Don't worry, little bird. I'll help you."
 The bird looked up at Aisha and chirped softly. Aisha smiled and said, "I'll take you to the top of the hill. You'll be safe there."
 Aisha carefully carried the bird to the top of the hill. She placed it in a nest and said, "There you go. Now you can be safe."
 The bird chirped happily and flew away. Aisha smiled and said, "I'm glad I could help."
-Sample 60 (Result Validation PASS): 198 tokens in 685 ms, throughput = 289.051 tokens/s
+Sample 60 (Result Validation PASS): 198 tokens in 683 ms, throughput = 289.898 tokens/s
 
 In the bustling city of Nanjing, there was a little girl named Lily. She was three years old and loved to explore. One day, she was walking around the city when she saw a big, shiny car. She was so excited and ran up to it.
 "Wow!" she said. "This car is so cool!"
@@ -490,7 +490,7 @@ Lily was so excited. She jumped up and down and said, "Yes, please!"
 The man smiled and said, "Okay, let's go!"
 So, Lily and the man drove around the city in the big, shiny car. They saw so many interesting things and had a lot of fun. When they were done, the man said goodbye and drove away.
 Lily waved goodbye and said, "Thank you for the ride!"
-Sample 61 (Result Validation PASS): 255 tokens in 934 ms, throughput = 273.019 tokens/s
+Sample 61 (Result Validation PASS): 255 tokens in 926 ms, throughput = 275.378 tokens/s
 
 Once upon a sunny afternoon, a little girl named Lily was playing in her backyard. She saw a butterfly and tried to catch it, but it flew away. Suddenly, she heard a loud noise and saw a big dog running towards her. She got scared and ran to her mom.
 "Mommy, mommy, there's a big dog!" Lily cried.
@@ -499,7 +499,7 @@ Lily felt better and went back to playing. But then, she saw a boy trying to tak
 "Ouch! That hurts!" the boy cried.
 Lily felt bad and gave him a hug. "I'm sorry. I didn't mean to hurt you. Here, you can play with my toy," she said.
 The boy smiled and they played together. Lily learned that it's not nice to pinch and that sharing is important.
-Sample 62 (Result Validation PASS): 234 tokens in 840 ms, throughput = 278.571 tokens/s
+Sample 62 (Result Validation PASS): 234 tokens in 832 ms, throughput = 281.25 tokens/s
 
 In a bustling city filled with colorful apps lived two curious little data helpers named UserDefaults and CoreData. They were always looking for ways to help others.
 One day, they heard a loud noise coming from the nearby forest. They decided to investigate and found a small bird with a broken wing.
@@ -509,14 +509,14 @@ The two helpers took the bird home and made a cozy nest for it. They fed it and 
 Each day, the bird got better and better. Soon, it was able to fly again.
 The two helpers were so happy to see the bird fly away. They knew they had done a good thing by helping the bird.
 The moral of the story is that it is important to help others in need. Even if it is something small, like helping a bird, it can make a big difference.
-Sample 63 (Result Validation PASS): 217 tokens in 766 ms, throughput = 283.29 tokens/s
+Sample 63 (Result Validation PASS): 217 tokens in 758 ms, throughput = 286.28 tokens/s
 
 In the bustling city of Smyrna, there was a little girl named Lucy. She was three years old and loved to explore. One day, she decided to go for a walk in the park.
 As she walked, she noticed a big, tall tree. She wanted to climb it, so she started to climb. But as she got higher and higher, she started to feel scared.
 Suddenly, she heard a voice. It was a kind old man. He said, "Don't be scared, little one. I'm here to help you."
 Lucy was so relieved. She thanked the old man and he said, "You're welcome. I'm here to help you. I'm a very compassionate man."
 The old man helped Lucy climb down the tree. She thanked him again and ran off to explore the rest of the city.
-Sample 64 (Result Validation PASS): 197 tokens in 682 ms, throughput = 288.856 tokens/s
+Sample 64 (Result Validation PASS): 197 tokens in 674 ms, throughput = 292.285 tokens/s
 
 Little Timmy loved exploring his backyard. He was always looking for something new and exciting. One day, he found a big, red apple. He was so excited that he ran to show his mom.
 "Mommy, look what I found!" he said, holding up the apple.
@@ -525,14 +525,14 @@ Timmy was disappointed, but he knew his mom was right. He put the apple in the f
 Later that day, Timmy's mom went to the fridge to get the apple. But when she opened the door, she saw that the apple had turned brown and mushy. It was no longer good to eat.
 "Oh no," she said. "I should have checked the apple before I put it in the fridge."
 Timmy was sad that his apple was no good, but he knew his mom was right. From then on, he always made sure to check his food before he ate it.
-Sample 65 (Result Validation PASS): 240 tokens in 867 ms, throughput = 276.817 tokens/s
+Sample 65 (Result Validation PASS): 240 tokens in 858 ms, throughput = 279.72 tokens/s
 
 It was a bright, sunny day in the month of August. Little Jack was playing in the garden with his toy truck. He was having so much fun!
 Suddenly, he heard a loud noise. He looked up and saw a big, black bird flying in the sky. It was so high up that Jack couldn't see it anymore.
 Jack was so excited. He wanted to get closer to the bird. He ran to the fence and tried to climb it. But it was too high.
 Jack was sad. He wanted to get closer to the bird. Then he had an idea. He ran to the kitchen and grabbed a big bowl of popcorn. He ran back to the fence and threw the popcorn up in the air.
 The bird saw the popcorn and flew down to eat it. Jack was so happy! He had managed to get close to the bird. He smiled and waved goodbye as the bird flew away.
-Sample 66 (Result Validation PASS): 211 tokens in 741 ms, throughput = 284.75 tokens/s
+Sample 66 (Result Validation PASS): 211 tokens in 735 ms, throughput = 287.075 tokens/s
 
 In the bustling town of Stretford, there was a little girl named Lily. She was three years old and loved to explore. One day, she decided to go for a walk in the park.
 As she walked, she noticed a big, tall tree. She wanted to climb it, so she started to climb. But as she got higher and higher, she started to feel scared. She looked down and saw that she was very high up.
@@ -540,7 +540,7 @@ Suddenly, she heard a voice. It was her mom. "Lily, come down now," her mom said
 Lily was sad, but she knew her mom was right. She slowly started to climb down. When she got to the bottom, her mom gave her a big hug.
 "I'm so glad you're safe," her mom said. "Let's go home now."
 Lily smiled and nodded. She was happy to be safe and sound.
-Sample 67 (Result Validation PASS): 217 tokens in 766 ms, throughput = 283.29 tokens/s
+Sample 67 (Result Validation PASS): 217 tokens in 759 ms, throughput = 285.903 tokens/s
 
 Once upon a time in the magical world of Toonville, there lived a little girl named Lily. She was three years old and loved to explore the world around her.
 One day, Lily was walking through the forest when she saw a big, scary bear. She was so scared that she started to cry.
@@ -549,7 +549,7 @@ Lily stopped crying and looked at the bear. She said, "Why are you so big and sc
 The bear smiled and said, "I'm big and scary because I'm a bear. But I'm also very friendly. Would you like to be my friend?"
 Lily smiled and said, "Yes, I would like that very much."
 The bear and Lily became friends and they explored the magical world of Toonville together. They had lots of fun and were never scared again.
-Sample 68 (Result Validation PASS): 212 tokens in 747 ms, throughput = 283.802 tokens/s
+Sample 68 (Result Validation PASS): 212 tokens in 738 ms, throughput = 287.263 tokens/s
 
 Once upon a time in Veggieville, there was a little girl named Lucy. She was three years old and loved to explore. One day, she decided to go for a walk in the park.
 As she was walking, she saw a big, green tree. She wanted to climb it, so she started to climb. But as she was climbing, she heard a loud noise. It was a big, scary monster!
@@ -558,7 +558,7 @@ But then, a brave knight came to save her. He said, "Don't worry, I'll protect y
 The monster was so scared that it ran away. Lucy was so happy that the knight had saved her. She thanked him and said, "You are so brave!"
 The knight smiled and said, "It's my job to protect people. Now, let's go home."
 So, Lucy and the knight went home, and Lucy was safe. She was so happy that the knight had saved her.
-Sample 69 (Result Validation PASS): 255 tokens in 935 ms, throughput = 272.727 tokens/s
+Sample 69 (Result Validation PASS): 255 tokens in 925 ms, throughput = 275.676 tokens/s
 
 In the heart of New York State, there was a little girl named Lily. She was three years old and loved to explore the world around her. One day, she was walking in the park when she saw a big, red balloon. She was so excited and ran over to it.
 "Can I have it?" she asked her mom.
@@ -568,7 +568,7 @@ Lily was disappointed, but she kept looking around. Suddenly, she saw a man with
 Lily was so excited that she didn't listen to the man. She grabbed the balloon and started running around with it. Suddenly, the balloon popped and Lily was so sad. She started to cry.
 The man came over and said, "I told you to be careful. Now you have to learn to listen to others."
 Lily nodded and wiped away
-Sample 70 (Result Validation PASS): 255 tokens in 933 ms, throughput = 273.312 tokens/s
+Sample 70 (Result Validation PASS): 255 tokens in 926 ms, throughput = 275.378 tokens/s
 
 In a bright and colorful art studio, there was a little girl named Lily. She loved to draw and paint. One day, she saw a big box of crayons and a big piece of paper. Lily was very happy.
 Lily started to draw a big, round sun. She used yellow and orange crayons to make it bright. Then, she drew a big, green tree with lots of leaves. She also drew a little house with a red door. Lily was having so much fun.
@@ -577,22 +577,22 @@ Suddenly, Lily's little brother, Tim, came into the room. He saw the big, round 
 "I'm sorry," said Tim. "I didn't mean to."
 Lily smiled and said, "It's okay. Let's draw together."
 So, Lily and Tim drew a big, bright sun and a big, green tree. They were
-Sample 71 (Result Validation PASS): 255 tokens in 933 ms, throughput = 273.312 tokens/s
+Sample 71 (Result Validation PASS): 255 tokens in 925 ms, throughput = 275.676 tokens/s
 
 In a bright and cozy classroom, there was a little girl named Lily. She loved to play with her friends and learn new things. One day, her teacher, Miss Rose, told the class they would have a special surprise the next day.
 The next day, Lily and her friends were very excited. They could not wait to see what the surprise was. Miss Rose told the class to close their eyes and count to ten. When they opened their eyes, they saw a big, colorful box in the middle of the classroom.
 Lily and her friends were so happy to see the box. They opened it and found lots of fun toys inside. They played with the toys all day long and had a great time. The bright classroom was filled with laughter and joy. And that is how Lily and her friends had the best day ever.
-Sample 72 (Result Validation PASS): 181 tokens in 616 ms, throughput = 293.831 tokens/s
+Sample 72 (Result Validation PASS): 181 tokens in 611 ms, throughput = 296.236 tokens/s
 
 Little Timmy had a wiggly tail and four legs. He was very excited to go to the park with his mom. When they arrived, Timmy saw a big slide and ran towards it. He climbed up the ladder and slid down the slide. It was so much fun!
 After playing for a while, Timmy's mom said it was time to go home. Timmy didn't want to leave yet, but he knew he had to. As they walked home, Timmy saw a big dog. He was scared and wanted to run away, but his mom told him to stay still. The dog sniffed Timmy's tail and then walked away.
 When they got home, Timmy's mom told him to shut the door. Timmy tried to shut it, but it was too heavy. His mom helped him and they shut the door together. Timmy was happy to be safe at home with his mom.
-Sample 73 (Result Validation PASS): 199 tokens in 689 ms, throughput = 288.824 tokens/s
+Sample 73 (Result Validation PASS): 199 tokens in 682 ms, throughput = 291.789 tokens/s
 
 In a small town named Fixville, there was a little girl named Lily. She loved to play with her toy car. One day, while playing, her toy car broke. Lily was very sad.
 Lily's dad saw her crying and asked, "Why are you sad, Lily?" Lily showed her dad the broken toy car. Her dad said, "Don't worry, I can repair it for you." Lily's eyes lit up with joy.
 Her dad took the toy car and fixed it with his tools. When he was done, he gave it back to Lily. She was so happy to see her toy car working again. She hugged her dad and said, "Thank you, Dad! You are the best!" From that day on, Lily and her dad played with the toy car together, and they had lots of fun.
-Sample 74 (Result Validation PASS): 198 tokens in 688 ms, throughput = 287.791 tokens/s
+Sample 74 (Result Validation PASS): 198 tokens in 679 ms, throughput = 291.605 tokens/s
 
 Emma was having trouble sleeping at night. She tossed and turned in her bed, but she could not find her teddy bear. She felt scared and lonely. She called for her mom, but her mom was busy in the kitchen.
 "Mom, where is my teddy bear?" Emma asked.
@@ -602,7 +602,7 @@ Emma did not want to sleep. She wanted her teddy bear. She got out of her bed an
 Emma was surprised and happy. She hugged the bear and felt its soft fur. She felt safe and warm.
 "Thank you, teddy bear. You're the best. I love you," Emma said.
 "I love you too
-Sample 75 (Result Validation PASS): 255 tokens in 940 ms, throughput = 271.277 tokens/s
+Sample 75 (Result Validation PASS): 255 tokens in 925 ms, throughput = 275.676 tokens/s
 
 Little Mandy was always fascinated by music. She loved to listen to the different sounds and sing along. One day, she heard a beautiful melody coming from outside. She ran to the window and saw a man playing a guitar.
 Mandy was so excited that she ran outside to meet him. She asked him if she could try playing the guitar. The man smiled and said, "Sure, why not?"
@@ -611,7 +611,7 @@ The next day, Mandy went back to the man's house. He was so happy to see her and
 Mandy opened the box and inside was a beautiful guitar. She was so excited that she hugged the man and thanked him. She couldn't wait to start playing.
 The man smiled and said, "I knew you would love it. Now, let's go and play some music together!"
 Mandy and the man played the guitar together
-Sample 76 (Result Validation PASS): 255 tokens in 935 ms, throughput = 272.727 tokens/s
+Sample 76 (Result Validation PASS): 255 tokens in 929 ms, throughput = 274.489 tokens/s
 
 In a bustling town full of inventors, there was a little girl named Lucy. She was only three years old and loved to explore. One day, she decided to go on an adventure. She put on her shoes and grabbed her backpack.
 As she walked, she noticed a big, tall building. She had never seen it before and was curious. She walked up to the door and knocked.
@@ -620,7 +620,7 @@ As she walked, she noticed a big, tall building. She had never seen it before an
 The door opened and a friendly old man stepped out. He smiled at Lucy and said, "Welcome, Lucy. I'm so glad you came. I'm a scientist and I'm here to show you something special."
 The scientist took Lucy inside and showed her a big, shiny machine. He explained that it was a microscope and it could help her see tiny things up close. Lucy was amazed.
 The scientist then showed her how to use the microscope. He said, "You can use this to look at things that are too small to see with your eyes. It's like a special tool that helps you see things that
-Sample 77 (Result Validation PASS): 255 tokens in 935 ms, throughput = 272.727 tokens/s
+Sample 77 (Result Validation PASS): 255 tokens in 926 ms, throughput = 275.378 tokens/s
 
 High up in the colorful hot air balloon, a 3 year old girl was so excited. She was going to fly high in the sky and see the world from above. She was wearing her favourite dress and her favourite shoes.
 The balloon was so high that the little girl could see the clouds and the sun. She was so happy and she smiled.
@@ -628,12 +628,12 @@ Suddenly, the balloon started to get lower and lower. The little girl was scared
 "Don't worry," said her mum. "We will be okay. Just stay calm and hold on tight."
 The little girl held on tight and the balloon slowly started to rise again. She was so relieved and she smiled.
 The balloon rose higher and higher until it was out of sight. The little girl waved goodbye and said, "Bye bye balloon!"
-Sample 78 (Result Validation PASS): 198 tokens in 686 ms, throughput = 288.63 tokens/s
+Sample 78 (Result Validation PASS): 198 tokens in 679 ms, throughput = 291.605 tokens/s
 
 In a land far away, there was a big war. Many people were not happy. They wanted to be safe and have fun. One day, a little boy named Tim found a magic rock. The rock could make things shrink.
 Tim showed the rock to his friend, Sue. "Look, Sue! I found a magic rock. It can make things small!" Sue was excited. "Let's try it on the war, so we can be safe and have fun!" Tim agreed.
 They went to the war and used the magic rock. The war started to shrink. The people became small, like bugs. Tim and Sue laughed and played with the tiny people. They were safe and happy. The magic rock had saved the day.
-Sample 79 (Result Validation PASS): 154 tokens in 510 ms, throughput = 301.961 tokens/s
+Sample 79 (Result Validation PASS): 154 tokens in 505 ms, throughput = 304.95 tokens/s
 
 Once upon a time in the bustling city of Toronto, there was a little girl named Lucy. She was three years old and loved to explore. One day, she decided to go for a walk in the park.
 As she walked, she noticed a big, shiny, red balloon. She was so excited and ran over to it. She reached out to grab it, but it was too high. She tried to jump, but she couldn't reach it.
@@ -641,7 +641,7 @@ Suddenly, a kind old man appeared. He said, "I can help you get the balloon, but
 Lucy thanked the old man and ran off with the balloon. She was so happy and couldn't wait to show her friends.
 But when she got home, she realized that the balloon was broken. She was so sad and started to cry.
 The old man had been right. Lucy had been careless and now her balloon was broken. She had to accept that her adventure had ended in a bad way.
-Sample 80 (Result Validation PASS): 245 tokens in 890 ms, throughput = 275.281 tokens/s
+Sample 80 (Result Validation PASS): 245 tokens in 880 ms, throughput = 278.409 tokens/s
 
 It was a sunny day and Sammy the Squirrel was feeling hungry. He looked around and saw a big, juicy nut on the ground. He quickly ran over and grabbed it.
 "Yum!" he said.
@@ -656,13 +656,13 @@ Sammy looked up and saw a big, friendly bear.
 The bear smiled.
 "It's okay," he said. "You can have some of my berries. I'm sure they'll taste good."
 Sammy was so happy. He thanked the bear and started to eat the berries. They were so
-Sample 81 (Result Validation PASS): 255 tokens in 934 ms, throughput = 273.019 tokens/s
+Sample 81 (Result Validation PASS): 255 tokens in 925 ms, throughput = 275.676 tokens/s
 
 Little Bobby was always curious about the human body and how it worked. He asked his mom, "What is the human body?" His mom replied, "The human body is a person who helps us do things like eat, sleep, and play." Bobby was so excited to learn about the human body.
 One day, Bobby asked his mom, "Can I help the human body?" His mom smiled and said, "Yes, you can help by being kind and helpful to others." Bobby was so happy to hear this and he promised to be kind and helpful to everyone he met.
 The next day, Bobby saw an old man struggling to carry his groceries. Bobby ran over to help him and the old man was so grateful. He said, "Thank you so much, young man. You are so kind and helpful." Bobby felt so proud of himself for helping the old man.
 From that day on, Bobby made sure to always be kind and helpful to others. He knew that being kind and helpful was the best way to make the world a better place.
-Sample 82 (Result Validation PASS): 218 tokens in 770 ms, throughput = 283.117 tokens/s
+Sample 82 (Result Validation PASS): 218 tokens in 762 ms, throughput = 286.089 tokens/s
 
 In a magical land called Mathville, there lived a little girl named Lucy. She was only three years old, but she was very smart. Every day, she would go to the park and play with her friends.
 One day, Lucy was playing with her friends when she noticed something strange. She saw a big, green monster! It was so big and scary that Lucy was scared.
@@ -670,12 +670,12 @@ The monster said, "I'm going to destroy the park!" Lucy was very scared and star
 But then, Lucy's friends came to her rescue. They said, "Don't worry, Lucy. We will help you save the park!"
 So, Lucy and her friends worked together to stop the monster. They used their smart minds and worked very hard. Finally, they were able to stop the monster from destroying the park.
 Lucy was so happy that she hugged her friends and thanked them for helping her save the park. From that day on, Lucy and her friends were always ready to help each other.
-Sample 83 (Result Validation PASS): 223 tokens in 793 ms, throughput = 281.211 tokens/s
+Sample 83 (Result Validation PASS): 223 tokens in 784 ms, throughput = 284.439 tokens/s
 
 In a small town named Innovationville, there was a big race. All the kids were excited to run and win. In novelobile was a fast car that could zoom very fast.
 One day, a little boy named Timmy wanted to join the race. He asked his mom, "Can I run in the race, please?" His mom said, "Yes, but be careful and have fun!" Timmy was so happy and went to the race with his friends.
 The race started, and all the kids ran as fast as they could. Timmy was running very fast, just like in his favorite novel. He saw his friend, Sally, fall down. Timmy stopped and helped her up. They both ran together and finished the race. Even though Timmy didn't win, he was happy because he helped his friend.
-Sample 84 (Result Validation PASS): 176 tokens in 597 ms, throughput = 294.807 tokens/s
+Sample 84 (Result Validation PASS): 176 tokens in 590 ms, throughput = 298.305 tokens/s
 
 Little Sam was playing with his new clock, when he heard a loud noise. He looked up and saw a big, scary monster! Sam was so scared that he started to cry.
 The monster said, "Don't be scared, little one. I'm not here to hurt you. I just want to play with your clock."
@@ -684,24 +684,24 @@ The monster smiled and said, "It tells me the time. I'm very intelligent and I c
 Sam was amazed. He said, "Wow! That's so cool! Can I play with your clock too?"
 The monster nodded and said, "Of course! Let's play together!"
 So Sam and the monster played with the clock all day. They had so much fun that Sam forgot all about being scared.
-Sample 85 (Result Validation PASS): 210 tokens in 737 ms, throughput = 284.939 tokens/s
+Sample 85 (Result Validation PASS): 210 tokens in 729 ms, throughput = 288.066 tokens/s
 
 In the cozy corner of a bustling bakery, there was a little girl named Lily. She loved to eat pastries, especially the ones with sprinkles on top. One day, she went to the bakery with her mom and saw a big, beautiful pastry. She asked her mom if she could have it, but her mom said no because it was too expensive.
 Lily was sad and started to cry. A kind old lady who was sitting nearby saw her crying and asked what was wrong. Lily told her about the pastry and how she couldn't have it. The old lady smiled and said, "Don't worry, I have a surprise for you." She reached into her bag and pulled out a small pastry with a bow on top. "This is for you," she said.
 Lily was so happy and thanked the old lady. She took a bite of the pastry and it was delicious. She turned to the old lady and said, "You're so kind. I'm sorry I cried earlier." The old lady smiled and said, "It's okay, sometimes we all cry when we're sad. But remember, there are always
-Sample 86 (Result Validation PASS): 255 tokens in 935 ms, throughput = 272.727 tokens/s
+Sample 86 (Result Validation PASS): 255 tokens in 925 ms, throughput = 275.676 tokens/s
 
 Little Timmy loved playing outside and gazing up at the big, blue sky. One day, he saw a big, white cloud that looked like a fluffy pillow. He pointed up and said, "Look, Mommy! A cloud!"
 His mommy smiled and said, "Yes, Timmy. That's a cloud. It's very high up in the sky."
 Timmy looked up at the cloud and said, "I wish I could touch it."
 His mommy replied, "I know, Timmy. But it's too high up. Maybe one day you'll be able to reach it."
 Timmy smiled and continued to gaze up at the cloud, dreaming of all the adventures he could have if he could touch it.
-Sample 87 (Result Validation PASS): 167 tokens in 562 ms, throughput = 297.153 tokens/s
+Sample 87 (Result Validation PASS): 167 tokens in 554 ms, throughput = 301.444 tokens/s
 
 Once upon a time in a small town named Colorville, there lived a little girl named Lily. She loved to play with her friends and make pretty things with her hands. One day, Lily found a big box of colorful thread in her room. She was very happy and wanted to make something special with it.
 Lily decided to make a beautiful dress for her doll, Daisy. She took the thread and started to sew. As she sewed, she talked to Daisy. "Daisy, I hope you like your new dress," she said. Daisy didn't say anything, but Lily knew she was happy.
 When Lily finished the dress, she put it on Daisy. It was a perfect fit! Daisy looked so pretty in her new dress. Lily was very proud of her work. She showed the dress to her mom and dad, and they loved it too. From that day on, Lily and Daisy were the best of friends, and they played together every day.
-Sample 88 (Result Validation PASS): 221 tokens in 784 ms, throughput = 281.888 tokens/s
+Sample 88 (Result Validation PASS): 221 tokens in 775 ms, throughput = 285.161 tokens/s
 
 In a bustling town filled with friendly animals, people and buildings. Everyone was happy and content.
 One day, a little girl named Lucy was walking through the town. She was looking for something special. Suddenly, she saw a big, shiny box. She was so excited!
@@ -712,7 +712,7 @@ The man said, "No, it's mine. I'm going to take it away."
 Lucy was so sad. She didn't want to give up her special necklace. She said, "Please don't take it away. I'll give you something else."
 The man thought for a moment and then said, "Okay, I'll take something else. But you have to give me something else too."
 Lucy thought for a moment and then said, "I'll
-Sample 89 (Result Validation PASS): 255 tokens in 935 ms, throughput = 272.727 tokens/s
+Sample 89 (Result Validation PASS): 255 tokens in 927 ms, throughput = 275.081 tokens/s
 
 In a bustling city called Lahore, there lived a little girl named Lucy. She was only three years old and loved to explore the world around her. One day, she decided to go on an adventure and explore the city.
 As she walked around, she noticed a big, tall building. She wanted to go inside and explore, but she was too small to reach the door. She tried to jump, but she couldn't reach it.
@@ -720,13 +720,13 @@ Suddenly, a kind old man appeared. He said, "I can help you reach the door, litt
 The old man opened the door and they both stepped inside. It was a very big and beautiful city. There were tall buildings, bright lights and lots of people. Lucy was amazed.
 The old man said, "This city is very special. It's full of rich people who have lots of money." Lucy was so excited to see all the rich people. She wanted to meet them all.
 The old man smiled and said, "You can meet them all if you want. Just be careful and stay close to me." Lucy smiled and said, "Okay
-Sample 90 (Result Validation PASS): 255 tokens in 934 ms, throughput = 273.019 tokens/s
+Sample 90 (Result Validation PASS): 255 tokens in 925 ms, throughput = 275.676 tokens/s
 
 Little Timmy was playing alone on the street when suddenly, he heard a loud noise. He looked up and saw a big, scary dog running towards him. Timmy was scared and didn't know what to do.
 Just then, a kind lady came by and saw Timmy in trouble. She quickly picked him up and held him close. "Don't worry, little one," she said. "I'll keep you safe."
 The lady took Timmy to her house and gave him some cookies and milk. Timmy felt much better and thanked the lady for her help. "You're welcome," she said. "I'm glad I could help you."
 From that day on, Timmy knew that if he ever needed help, he could always ask someone. And he also knew that there were kind people in the world who would help him when he was scared.
-Sample 91 (Result Validation PASS): 187 tokens in 641 ms, throughput = 291.732 tokens/s
+Sample 91 (Result Validation PASS): 187 tokens in 634 ms, throughput = 294.953 tokens/s
 
 In a small town named Greenwood, there lived a little girl named Lily. She loved to play with her toys and her friends. One day, Lily and her friends were playing in the park when they saw a big, scary dog. The dog barked loudly and scared them all.
 Lily's friend, Timmy, said, "I'm scared of the dog. What should we do?"
@@ -735,14 +735,14 @@ As they were walking home, they saw a man who looked very angry. He was shouting
 The man replied, "I lost my job and I don't know how I'm going to pay my bills."
 Lily felt sad for the man and said, "Don't worry, everything will be okay. Just relax and everything will be alright."
 The man smiled and thanked Lily for her kind words. From that day on, Lily and her friends knew that even when things seem scary, they can always find a way to relax and be happy.
-Sample 92 (Result Validation PASS): 255 tokens in 934 ms, throughput = 273.019 tokens/s
+Sample 92 (Result Validation PASS): 255 tokens in 925 ms, throughput = 275.676 tokens/s
 
 In a magical kingdom far, far away, there lived a brave knight. He was very strong and he had a shiny sword. Every day he would go out and fight the dragons that lived in the forest.
 One day, the knight was walking through the forest when he heard a loud noise. He looked around and saw a big, scary dragon! The knight was very scared, but he knew he had to fight the dragon.
 The knight took out his sword and started to fight. He swung his sword back and forth, but the dragon was too strong. The knight was getting tired, but he kept fighting.
 Suddenly, the dragon stopped and said, "I'm sorry for scaring you. I just wanted to play." The knight was surprised, but he was also happy. He put down his sword and said, "Let's play together!"
 The knight and the dragon played together all day. They had so much fun that the knight forgot all about his sword. He was so happy that he had made a new friend.
-Sample 93 (Result Validation PASS): 235 tokens in 849 ms, throughput = 276.796 tokens/s
+Sample 93 (Result Validation PASS): 235 tokens in 836 ms, throughput = 281.1 tokens/s
 
 In a bustling city lived two curious kids, Jack and Jill. They were always looking for something new and exciting to do. One day, Jack had an idea. He said to Jill, "Let's go to the park and play!"
 Jill was excited and said, "Yes, let's go!"
@@ -751,7 +751,7 @@ Jill was scared and said, "Let's go home!" But Jack was too curious and said, "N
 So they stayed and played until the rain started. Then, they ran home as fast as they could.
 When they got home, they were both soaking wet. Jack said, "I'm glad we stayed. We were so curious and now we're all wet!"
 Jill smiled and said, "Me too! Let's go inside and get dry!"
-Sample 94 (Result Validation PASS): 241 tokens in 871 ms, throughput = 276.693 tokens/s
+Sample 94 (Result Validation PASS): 241 tokens in 863 ms, throughput = 279.258 tokens/s
 
 Little Bunny was having trouble focusing in school. He was so worried that he couldn't understand the lessons. He was feeling very sad and he wanted to cry.
 His mom saw him and said, "Don't worry, Little Bunny. I'm here to help you. I'm going to encourage you to do your best."
@@ -760,7 +760,7 @@ His mom gave him a big hug and said, "I know you can do it. Just keep trying and
 Little Bunny felt better and he tried his best. He was so happy when he finally understood the lesson.
 His mom said, "See, I told you that you could do it. You just needed a little encouragement."
 Little Bunny smiled and said, "Thanks, Mommy. I'm so glad you're here to help me."
-Sample 95 (Result Validation PASS): 205 tokens in 715 ms, throughput = 286.713 tokens/s
+Sample 95 (Result Validation PASS): 205 tokens in 709 ms, throughput = 289.14 tokens/s
 
 Once upon a time in Harmonyville, there lived a little girl named Lucy. She was three years old and loved to explore the world around her.
 One day, Lucy was walking in the park when she saw a big, shiny box. She was so excited and ran over to it. She opened the box and found a beautiful, sparkly necklace inside. She put it on and felt so happy.
@@ -770,7 +770,7 @@ The man said, "It's okay, but you must be careful. That necklace is very special
 Lucy nodded and said, "I will be careful. I promise."
 The man smiled and said, "Good. Now go and have fun."
 Lucy smiled and ran off to explore the park. She
-Sample 96 (Result Validation PASS): 255 tokens in 933 ms, throughput = 273.312 tokens/s
+Sample 96 (Result Validation PASS): 255 tokens in 925 ms, throughput = 275.676 tokens/s
 
 It was a stormy Thursday evening when the mighty Sea Hawks prepared to face their rivals, the sky was filled with dark clouds and the wind was blowing hard.
 Mommy and Daddy were getting ready to go out, but their little girl, Lucy, was not ready. She was scared of the storm and wanted to stay inside.
@@ -778,7 +778,7 @@ Mommy said, "Lucy, don't worry. We will be safe inside. We will prepare for the 
 Lucy was still scared, but she trusted her parents. She helped them prepare for the storm by getting her blanket and pillow.
 When the storm was over, Lucy was relieved. She was happy that she had been brave and prepared for the storm.
 Mommy and Daddy hugged her and said, "We are so proud of you, Lucy. You were so mighty!"
-Sample 97 (Result Validation PASS): 190 tokens in 653 ms, throughput = 290.965 tokens/s
+Sample 97 (Result Validation PASS): 190 tokens in 650 ms, throughput = 292.308 tokens/s
 
 In a bustling town of Grammarville, a young girl named Lily was playing in her garden. She was having a lot of fun, running around and picking flowers. Suddenly, she heard a loud noise coming from the nearby forest. She was scared and started to cry.
 Her mother heard her cries and came running. She hugged Lily and said, "Don't worry, everything is going to be alright."
@@ -786,7 +786,7 @@ Lily asked, "What was that noise?"
 Her mother replied, "It was a bear. He was just looking for food."
 Lily was still scared, but her mother said, "Let's go inside and have some dinner. I'm sure you'll feel better."
 Lily and her mother went inside and had dinner. After dinner, Lily felt much better. She was no longer scared and was happy to be safe with her mother.
-Sample 98 (Result Validation PASS): 196 tokens in 677 ms, throughput = 289.513 tokens/s
+Sample 98 (Result Validation PASS): 196 tokens in 670 ms, throughput = 292.537 tokens/s
 
 In a bustling kitchen, a little girl named Lucy was helping her mommy. She was wearing a pretty apron with flowers on it.
 "Mommy, what are we making?" asked Lucy.
@@ -800,7 +800,7 @@ Lucy was getting impatient. She wanted the cake now!
 Finally, the timer went off and the cake was ready. Lucy was so happy. She put on her apron and helped Mommy take the cake out of the oven.
 "It looks delicious," said Lucy.
 Mommy smiled. "Yes, it does. Now let's enjoy it together."
-Sample 99 (Result Validation PASS): 225 tokens in 802 ms, throughput = 280.549 tokens/s
+Sample 99 (Result Validation PASS): 225 tokens in 793 ms, throughput = 283.733 tokens/s
 
 In a bustling town lived a curious girl named Jane. She was always looking for something new and exciting to do. One day, she decided to go on an adventure. She packed her bag and set off.
 As she walked, she noticed a strange smell. It was a smelly smell, like something was burning. Jane was curious, so she followed the smell.
@@ -809,7 +809,7 @@ Jane slowly walked towards the fire. Suddenly, she heard a voice. It was a frien
 Jane was surprised. She asked, "Who are you?"
 The voice replied, "I'm the fire spirit. I'm here to help you on your adventure."
 Jane was so excited. She thanked the fire spirit and continued on her journey. She had a wonderful time and learned a lot about the world.
-Sample 100 (Result Validation PASS): 243 tokens in 885 ms, throughput = 274.576 tokens/s
+Sample 100 (Result Validation PASS): 243 tokens in 871 ms, throughput = 278.99 tokens/s
 
 Once in a bustling RoboCity, there was a little girl named Lily. She was three years old and loved to explore. One day, she decided to go on an adventure. She put on her shoes and grabbed her backpack.
 Lily walked through the forest and soon came across a big, old tree. She stopped and looked up. She saw a big, round, red apple hanging from one of the branches. She reached up and plucked it off the tree.
@@ -819,7 +819,7 @@ Lily smiled and said, "Sure!" She handed the bird the apple and watched as it to
 The bird said, "Thank you! That was delicious!"
 Lily smiled and said, "You're welcome!"
 The bird flew away and Lily continued on her adventure. She was happy to have shared her apple with the little bird.
-Sample 101 (Result Validation PASS): 254 tokens in 929 ms, throughput = 273.412 tokens/s
+Sample 101 (Result Validation PASS): 254 tokens in 921 ms, throughput = 275.787 tokens/s
 
 In a small town lived two best friends, Jack and Jill. They were always together and loved to play. One day, Jack and Jill decided to go on an adventure. They packed their bags and set off.
 As they walked, they saw a big, tall building. It was a university. Jack and Jill were curious and wanted to explore. They went inside and saw lots of people studying.
@@ -833,12 +833,12 @@ When Bobby reached the top, he looked down and saw a big puddle. He wanted to sp
 Bobby's mom and dad laughed. They said, "Let's go get some ice cream!" Bobby was so excited. He ran to the ice cream stand and got a big cone.
 When he got back to the slide, he saw a big puddle. He wanted to splash in it, but his mom and dad said no. Bobby was sad, but he knew he had to listen.
 He went back to the slide and had lots of fun. He slid down again and again, until it was time to go home. Bobby was so happy. He had a great day at the park.
-Sample 103 (Result Validation PASS): 240 tokens in 866 ms, throughput = 277.136 tokens/s
+Sample 103 (Result Validation PASS): 240 tokens in 858 ms, throughput = 279.72 tokens/s
 
 Once upon a time in a land far away, there was a big war. Many people were not happy. They wanted to find a way to stop the war.
 One day, a little girl named Lily found a magic stone. The stone could glow. It was very pretty. Lily thought the stone could help her stop the war.
 Lily took the glowing stone to the war. She showed it to the people. They saw the stone glow and felt happy. They stopped fighting and became friends. The war was over, and everyone was happy.
-Sample 104 (Result Validation PASS): 118 tokens in 377 ms, throughput = 312.997 tokens/s
+Sample 104 (Result Validation PASS): 118 tokens in 376 ms, throughput = 313.83 tokens/s
 
 It was a sunny afternoon when Timmy got home from school. He was excited to see his mom in the kitchen. She was making something special.
 "What are you making, Mommy?" Timmy asked.
@@ -860,7 +860,7 @@ The rabbit was excited and agreed. The frog chased the rabbit around the pond, b
 Finally, the frog said, "I give up. You win!"
 The rabbit was so happy and said, "Yay! I won!"
 The frog smiled and said, "That'
-Sample 106 (Result Validation PASS): 255 tokens in 935 ms, throughput = 272.727 tokens/s
+Sample 106 (Result Validation PASS): 255 tokens in 925 ms, throughput = 275.676 tokens/s
 
 Nellie was so excited to build a big lego castle! She had all the pieces she needed and was ready to start. She grabbed her tools and started to work.
 "This is going to be so much fun!" she said.
@@ -870,12 +870,12 @@ But Jack just laughed and said, "No way! I'm going to build my own castle!"
 Nellie was so sad. She wanted to finish her castle, but Jack was being so rude. She didn't know what to do.
 Then she had an idea. She grabbed some of her tools and started to build her own castle. It wasn't as big as Jack's, but it was still very nice.
 Nellie was so proud of her castle. She had finished it all by herself. She smiled and said, "I did it!"
-Sample 107 (Result Validation PASS): 222 tokens in 788 ms, throughput = 281.726 tokens/s
+Sample 107 (Result Validation PASS): 222 tokens in 779 ms, throughput = 284.981 tokens/s
 
 In a tiny town named Twizzleton, there lived a little girl named Lily. She loved to play with her toys and run around in the park. One day, she saw a big, red ball in the park. She wanted to play with it, but it was too big for her to carry.
 Lily asked her friend, Tom, "Can you help me carry the big, red ball?" Tom said, "Yes, I can help you." So, they both tried to carry the ball together. It was still hard, but they did not give up. They kept trying and trying until they could carry the ball.
 After they carried the ball, they played with it all day long. They had so much fun and were very happy. The other kids in the town saw them playing and joined in. Everyone learned that when they work together and don't give up, they can do anything. And that was the moral of the story: always help your friends and never give up.
-Sample 108 (Result Validation PASS): 208 tokens in 727 ms, throughput = 286.107 tokens/s
+Sample 108 (Result Validation PASS): 208 tokens in 720 ms, throughput = 288.889 tokens/s
 
 In a big city called Houston, there lived a little girl named Lucy. She was only three years old and loved to explore the city. One day, she decided to go for a walk.
 As she walked, she noticed a big building with a tall tower. She was curious and wanted to see what was inside. She walked up to the door and knocked.
@@ -885,17 +885,17 @@ The door opened and a friendly man stepped out. He smiled at Lucy and said, "Wel
 Lucy was excited and said yes. She followed the man inside and saw a big room filled with toys. She was so happy and started playing with them.
 The man smiled and said, "I'm glad you like it. I'm a wealthy man and I want to make sure you have lots of fun."
 Lucy thanked him and continued to play. She had a wonderful time and was so happy to have met the wealthy man.
-Sample 109 (Result Validation PASS): 228 tokens in 813 ms, throughput = 280.443 tokens/s
+Sample 109 (Result Validation PASS): 228 tokens in 806 ms, throughput = 282.878 tokens/s
 
 In a small town, there was a big, modern house. In this house, there lived a nice family. The family had a mom, a dad, a boy, and a girl. They all loved each other very much.
 One day, the boy and the girl went outside to play. They saw a big tree with a lot of leaves. The boy said, "Let's shake the tree and see what happens!" The girl agreed, and they both shook the tree.
 As they shook the tree, a lot of leaves fell down. They laughed and played in the leaves. The boy said, "This is so much fun!" The girl said, "Yes, it is!" They played in the leaves all day and had a great time in their big, modern house.
-Sample 110 (Result Validation PASS): 163 tokens in 545 ms, throughput = 299.083 tokens/s
+Sample 110 (Result Validation PASS): 163 tokens in 539 ms, throughput = 302.412 tokens/s
 
 In a small village, there lived a boy named Tim. Tim was a very impatient boy. He always wanted things right away. One day, Tim's mom told him to go to the store and buy some food. Tim did not want to go, but he knew he had to listen to his mom.
 On his way to the store, Tim saw a big dog. The dog was very friendly and wanted to play. Tim forgot about the food and started to play with the dog. They played and played until it was time to go home. Tim was very tired, but he did not want to leave the dog.
 When Tim got home, his mom was not happy. She told him that he did not listen to her and that he could not go to the store. Tim was sad and knew he had to be more patient. The next day, Tim went to the store and bought the food his mom asked for. He also went back to the dog and played with it again. This time, Tim was patient and listened to his mom. He learned that being patient is important and that it is better to listen to his mom than to rush and make her sad.
-Sample 111 (Result Validation PASS): 242 tokens in 875 ms, throughput = 276.571 tokens/s
+Sample 111 (Result Validation PASS): 242 tokens in 869 ms, throughput = 278.481 tokens/s
 
 In a bustling town named Cyberville, there was a little girl named Lucy. She was three years old and loved to explore. One day, she decided to go for a walk in the woods.
 As she walked, she noticed a big, old tree. She stopped and looked up at it. It was so tall and strong! She wanted to climb it, but she was too small.
@@ -905,7 +905,7 @@ Lucy was surprised. She looked around, but she couldn't see anyone. Then, she no
 Lucy was excited. She followed the old man up the tree. He showed her how to use her hands and feet to climb. She was so proud when she reached the top!
 The old man smiled and said, "You did it! You're a brave little girl."
 Lucy smiled back. She
-Sample 112 (Result Validation PASS): 255 tokens in 934 ms, throughput = 273.019 tokens/s
+Sample 112 (Result Validation PASS): 255 tokens in 925 ms, throughput = 275.676 tokens/s
 
 Patty and her friends on the basketball team were excited! They were going to play a game and Patty was sure she would win.
 The game was going well until Patty's team started to lose. Patty was so sad and she started to cry.
@@ -913,14 +913,14 @@ Her friends tried to cheer her up. They said, "Don't worry Patty, we can still w
 But Patty was too upset. She said, "No, I don't want to play anymore. I'm too sad."
 Her friends tried to cheer her up again, but Patty was still too sad. She said, "I don't want to play anymore. I'm too sad."
 Patty's friends were sad too. They all said goodbye and went home. Patty was left alone and she was still sad.
-Sample 113 (Result Validation PASS): 177 tokens in 600 ms, throughput = 295 tokens/s
+Sample 113 (Result Validation PASS): 177 tokens in 595 ms, throughput = 297.479 tokens/s
 
 Little Words were busy playing in their little village when suddenly, a big storm came. The wind was so strong that it blew away all the trees and houses. Little Words were scared and ran to hide in the forest.
 Little Words was so scared that he started to cry. He was all alone and didn't know what to do. Suddenly, he heard a voice. It was a kind voice that said, "Don't be scared, Little Words. I'm here to help you."
 Little Words looked up and saw a big, friendly bear. The bear said, "I can help you find your way home. Follow me." Little Words followed the bear and soon they were back in their village.
 Little Words was so happy to be home. He thanked the bear for helping him and said, "I'm so glad you were here to help me. I was so scared and I thought I was lost forever."
 The bear smiled and said, "It's okay, Little Words. I'm always here to help. Now, let's go inside and have some hot cocoa." Little Words smiled and followed the bear
-Sample 114 (Result Validation PASS): 255 tokens in 934 ms, throughput = 273.019 tokens/s
+Sample 114 (Result Validation PASS): 255 tokens in 925 ms, throughput = 275.676 tokens/s
 
 In the bustling town of Footballville, there was a little girl named Lucy. She was three years old and loved to explore. One day, she decided to go for a walk in the park.
 As she walked, she noticed a big, tall tree. She wanted to climb it, so she started to climb. She was almost at the top when she heard a voice.
@@ -932,12 +932,12 @@ Lucy nodded and kept climbing. When she reached the top, she saw a beautiful vie
 The man smiled and said, "That's a good point. You should always be careful when you climb."
 Lucy smiled and said, "Yes, I will be careful."
 The man waved goodbye and Lucy climbed back down the tree. She was so happy that she had been able to
-Sample 115 (Result Validation PASS): 255 tokens in 934 ms, throughput = 273.019 tokens/s
+Sample 115 (Result Validation PASS): 255 tokens in 925 ms, throughput = 275.676 tokens/s
 
 In a warm and cozy nest high up in a tree, there lived a little bird named Timmy. Timmy loved to fly around and play with his friends. One day, Timmy saw a big, red ball on the ground. He wanted to play with it, but he was too small to push it.
 Timmy asked his friend, Benny the squirrel, "Can you help me push the ball?" Benny said, "Yes, let's push it together!" So, Timmy and Benny pushed the big, red ball with all their might. The ball rolled and rolled, and they laughed and played.
 As they played, a little girl named Sally saw them. She clapped her hands and said, "Wow! You two are so good at pushing the ball!" Timmy and Benny felt very happy and proud. They knew that they had made a new friend. From that day on, Timmy, Benny, and Sally played together every day, and they all lived happily ever after.
-Sample 116 (Result Validation PASS): 217 tokens in 766 ms, throughput = 283.29 tokens/s
+Sample 116 (Result Validation PASS): 217 tokens in 759 ms, throughput = 285.903 tokens/s
 
 In a magical forest, there lived a little girl named Lucy. She was very brave and loved to explore. One day, she decided to go on an adventure.
 As she walked through the forest, she noticed a strange looking tree. It was tall and had a big, round hole in the middle. Lucy was curious and decided to take a closer look.
@@ -946,7 +946,7 @@ Lucy was a bit scared, but she was also very brave. She stepped inside the hole 
 The voice said, "This gem is very special. It will give you a magical power. But you must be careful. Only use it when you really need it."
 Lucy thanked the voice and took the gem. She was so happy and couldn't wait to use it.
 The next day, Lucy was in a hurry to go on another adventure. She wanted to find out what the gem could do. She ran through the forest and soon came to a river. She wanted to cross it, but she was scared
-Sample 117 (Result Validation PASS): 255 tokens in 934 ms, throughput = 273.019 tokens/s
+Sample 117 (Result Validation PASS): 255 tokens in 928 ms, throughput = 274.784 tokens/s
 
 It was a bright and sunny Saturday morning in Harmonyville. He was so excited to go to the park with his mom. He had been looking forward to it all week.
 When they arrived, he saw a big, green field with lots of flowers. He ran around and laughed with joy.
@@ -957,13 +957,13 @@ But then, a big, black bird flew down and snatched the flower away.
 His mom said, "Oh no! That bird took our flower!"
 His mom was so sad. She said, "We can't get it back now."
 His mom and son went home without the flower. It was a bad ending to their day.
-Sample 118 (Result Validation PASS): 194 tokens in 678 ms, throughput = 286.136 tokens/s
+Sample 118 (Result Validation PASS): 194 tokens in 662 ms, throughput = 293.051 tokens/s
 
 Once upon a warm sunny day, a little girl named Lily went to the park with her mom. They saw a big tree with a swing. Lily wanted to play on the swing, so her mom helped her get on it.
 As Lily was swinging, she saw a small bird on the ground. The bird looked sad and lost. Lily stopped swinging and went to the bird. She asked, "Why are you sad, little bird?"
 The bird said, "I can't find my mom. I don't know where she is." Lily wanted to help the bird, so she asked her mom if they could look for the bird's mom together. Her mom said yes, and they started to search.
 They looked under the tree, behind the bushes, and even in the sandbox. Finally, they found the bird's mom near the swings. The bird was so happy to see her mom, and Lily felt good for helping. They all played together in the warm sun until it was time to go home.
-Sample 119 (Result Validation PASS): 222 tokens in 788 ms, throughput = 281.726 tokens/s
+Sample 119 (Result Validation PASS): 222 tokens in 780 ms, throughput = 284.615 tokens/s
 
 Little Timmy was a curious kid who loved learning about all sorts of creatures. One day, he was walking in the park when he saw a big, green frog. He was so excited that he ran up to it and said, "Hello, Mr. Frog!"
 The frog looked at Timmy and said, "Hello, little one. What brings you here?"
@@ -971,10 +971,10 @@ Timmy replied, "I just wanted to say hello. I'm so happy to meet you!"
 The frog smiled and said, "I'm happy to meet you too. Would you like to learn something new today?"
 Timmy nodded eagerly and the frog said, "I can teach you about the world. It's full of wonderful things to learn about."
 Timmy was so excited that he couldn't wait to learn more. He thanked the frog and ran off to explore the park. He was so curious that he wanted to learn everything he could.
-Sample 120 (Result Validation PASS): 204 tokens in 711 ms, throughput = 286.92 tokens/s
+Sample 120 (Result Validation PASS): 204 tokens in 703 ms, throughput = 290.185 tokens/s
 
 ========== Summary ==========
 Total Samples: 120
 Total Tokens: 26812
-Total Time: 95538 ms
-Average Throughput: 280.642 tokens/s
+Total Time: 94782 ms
+Average Throughput: 282.881 tokens/s

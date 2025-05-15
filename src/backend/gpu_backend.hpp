@@ -53,17 +53,6 @@ public:
     void ropeEncoding(float *q, float *k, int headSize, int position, int dim, int kvDim, hipStream_t stream = nullptr);
     void swiGLLUFunc(float *hb, float *hb2, int hiddenDim, hipStream_t stream = nullptr);
     void flash_attention_gpu_step(float* q, float* k_cache, float* v_cache, float* output, float* scores, float* attn, int seq_len, hipStream_t stream = nullptr);
-    
-    // 修改后的QKV投影批处理方法，支持使用预分配的设备指针数组
-    void qkvProjectionBatched(
-        float* q, float* k, float* v,
-        const float* x,
-        const float* wq, const float* wk, const float* wv,
-        float** d_A_array,float ** d_B_array,float** d_C_array,
-        int embeddingDim, int kvDim,
-        int layer,
-        hipStream_t stream
-    );
 };
 
 #endif // GPU_BACKEND_HPP

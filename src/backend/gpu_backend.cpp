@@ -651,45 +651,4 @@ __global__ void setup_qkv_pointers_kernel(
 
 
 
-void GPU_Backend::qkvProjectionBatched(
-    float* q, float* k, float* v,
-    const float* x,
-    const float* wq, const float* wk, const float* wv,
-    float** d_A_array,float ** d_B_array,float** d_C_array,
-    int embeddingDim, int kvDim,
-    int layer,
-    hipStream_t stream)
-{
-    hipStream_t useStream = stream ? stream : this->stream;
-    const float alpha = 1.0f;
-    const float beta = 0.0f;
-    hipblasHandle_t blas_handle = this->blas_handle;
-    HIPBLAS_CHECK(hipblasSetStream(blas_handle, useStream));
 
-
-    setup_qkv_pointers_kernel<<<1, 1, 0, useStream>>>(
-        d_A_array, d_B_array, d_C_array,
-        const_cast<float*>(wq), const_cast<float*>(wk), const_cast<float*>(wv),
-        const_cast<float*>(x), q, k, v,
-        embeddingDim, kvDim, layer
-    );
-
-    // GEMM 参数
-    int M = embeddingDim;
-    int N = 1;
-    int K = embeddingDim;
-
-    // 执行 batched GEMM
-    HIPBLAS_CHECK(hipblasSgemmBatched(
-        blas_handle,
-        HIPBLAS_OP_T, HIPBLAS_OP_N,
-        M, N, K,
-        &alpha,
-        (const float**)d_A_array, K,
-        (const float**)d_B_array, K,
-        &beta,
-        d_C_array, M,
-        3
-    ));
-
-}
