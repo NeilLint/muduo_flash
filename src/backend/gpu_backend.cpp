@@ -605,57 +605,11 @@ __global__ void optimized_flash_output_kernel(
     output[head_idx * head_size + feat_idx] = acc;
 }
 
-// 添加内核函数声明
-__global__ void optimized_flash_qk_kernel(
-    const float* __restrict__ q,
-    const float* __restrict__ k_cache,
-    float* __restrict__ scores,
-    float* __restrict__ attn,
-    int seq_len,
-    int head_size,
-    int num_heads
-);
-
-__global__ void optimized_flash_output_kernel(
-    const float* __restrict__ attn,
-    const float* __restrict__ v_cache,
-    float* __restrict__ output,
-    int seq_len,
-    int head_size,
-    int num_heads
-);
-
-// 融合矩阵乘法和向量加法的内核
-__global__ void matmul_axpy_kernel(
-    const float* __restrict__ a,     // 矩阵A
-    const float* __restrict__ b,     // 矩阵B
-    float* __restrict__ c,           // 输出向量C (同时作为axpy的输入和输出)
-    float alpha,                     // axpy的缩放因子
-    int m,                           // 矩阵A的行数
-    int n,                           // 矩阵B的列数
-    int k                            // 矩阵A的列数/矩阵B的行数
-) {
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-    
-    if (row < m) {
-        float dot_product = 0.0f;
-        
-        // 计算矩阵乘法的点积
-        for (int i = 0; i < k; ++i) {
-            dot_product += a[row * k + i] * b[i];
-        }
-        
-        // 融合axpy操作：c[row] = c[row] + alpha * dot_product
-        c[row] += alpha * dot_product;
-    }
-}
-
 // 融合的matmul_axpy函数实现
 void GPU_Backend::matmul_axpy(
     float* out,                    // 输出向量，同时是axpy的目标
     const float* x,                // 输入向量
     const float* w,                // 权重矩阵
-    const float* bias,             // 可选的偏置向量(如果为nullptr则不使用)
     float factor,                  // axpy的缩放因子
     int n,                         // 输入维度
     int d,                         // 输出维度

@@ -332,7 +332,6 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
             inputVec,                                   // 输出向量(axpy的目标)
             state->d_branchActivation,                  // 输入向量 
             d_w.d_wo + layer * embeddingDim * embeddingDim,  // 权重矩阵
-            nullptr,                                    // 不使用偏置
             1.0f,                                       // 缩放因子
             embeddingDim,                               // 输入维度
             embeddingDim,                               // 输出维度
@@ -354,7 +353,6 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
             inputVec,                                   // 输出向量(axpy的目标)
             state->d_hiddenBuffer,                      // 输入向量
             d_w.d_w2 + layer * ffnHiddenDim * embeddingDim,  // 权重矩阵
-            nullptr,                                    // 不使用偏置
             1.0f,                                       // 缩放因子
             ffnHiddenDim,                               // 输入维度
             embeddingDim,                               // 输出维度
