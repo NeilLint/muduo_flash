@@ -41,10 +41,10 @@ __global__ void rmsnorm_kernel(
     float epsilon)
 {
     int tid = threadIdx.x;
-    int warp_id = tid / 32;
-    int lane_id = tid % 32;
+    int warp_id = tid / 64;
+    int lane_id = tid % 64;
 
-    // 共享内存用于warp间归约
+    // 使用共享内存进行warp间归约
     extern __shared__ float s_sum[];
 
     // 计算线程局部平方和
@@ -55,9 +55,9 @@ __global__ void rmsnorm_kernel(
         thread_sum_sq += val * val;
     }
 
-// Warp-level归约
+    // Warp-level归约
 #pragma unroll
-    for (int offset = 16; offset > 0; offset /= 2)
+    for (int offset = 32; offset > 0; offset /= 2)
     {
         thread_sum_sq += __shfl_down(thread_sum_sq, offset);
     }
@@ -72,9 +72,9 @@ __global__ void rmsnorm_kernel(
     // 最后一个warp处理warp间归约
     if (warp_id == 0)
     {
-        float warp_sum = (lane_id < (blockDim.x + 31) / 32) ? s_sum[lane_id] : 0.0f;
+        float warp_sum = (lane_id < (blockDim.x + 63) / 64) ? s_sum[lane_id] : 0.0f;
 #pragma unroll
-        for (int offset = 16; offset > 0; offset /= 2)
+        for (int offset = 32; offset > 0; offset /= 2)
         {
             warp_sum += __shfl_down(warp_sum, offset);
         }
@@ -85,9 +85,9 @@ __global__ void rmsnorm_kernel(
     }
     __syncthreads();
 
-    // 计算归一化因子
-    float total_sum_sq = s_sum[0];
-    float rms = sqrtf(total_sum_sq / (float)size + epsilon);
+    // 计算RMS归一化
+    float ss = s_sum[0];
+    float rms = sqrtf(ss / (float)size + epsilon);
     float inv_rms = 1.0f / rms;
 
     // 应用归一化和权重
@@ -194,7 +194,7 @@ void GPU_Backend::rmsnorm(
     // 使用单个块处理，共享内存大小为warp数量
     dim3 gridDim(1);
     dim3 blockDim(block_size);
-    size_t shared_mem_size = ((block_size + 31) / 32) * sizeof(float);
+    size_t shared_mem_size = ((block_size + 63) / 64) * sizeof(float);  // 改为63和64
 
     hipLaunchKernelGGL(
         rmsnorm_kernel,
@@ -312,11 +312,9 @@ __global__ void optimized_flash_qk_kernel(
 {
     // 获取头索引
     int head_idx = blockIdx.x;
-
-    // 获取当前线程在块内的索引
     int tid = threadIdx.x;
-    int warp_id = tid / 32;
-    int lane_id = tid % 32;
+    int warp_id = tid / 64;  // 改为64
+    int lane_id = tid % 64;  // 改为64
 
     // 共享内存
     extern __shared__ float s_data[];
@@ -331,9 +329,9 @@ __global__ void optimized_flash_qk_kernel(
     const float *q_head = q + head_idx * head_size;
 
     // 缩放因子
-    const float scale = 1.0f / sqrtf((float)head_size);
+    float scale = 1.0f / sqrtf((float)head_size);
 
-    // 计算分数并找到最大值
+    // 初始化最大值
     float thread_max = -FLT_MAX;
 
     // 计算 QK 点积 (批处理方式，添加循环展开优化)
@@ -364,19 +362,14 @@ __global__ void optimized_flash_qk_kernel(
             score += q_head[d] * k_vec[d];
         }
 
-        // 应用缩放
         score *= scale;
-
-        // 保存分数
         scores[head_idx * seq_len + i] = score;
-
-        // 更新线程局部最大值
         thread_max = fmaxf(thread_max, score);
     }
 
-// Warp-level归约找出最大值（更高效）
+    // Warp-level归约找出最大值（更高效）
 #pragma unroll
-    for (int offset = 16; offset > 0; offset /= 2)
+    for (int offset = 32; offset > 0; offset /= 2)  // 改为32开始
     {
         thread_max = fmaxf(thread_max, __shfl_down(thread_max, offset));
     }
@@ -391,9 +384,9 @@ __global__ void optimized_flash_qk_kernel(
     // 最后一个warp处理warp级别的归约
     if (warp_id == 0)
     {
-        float warp_max = (lane_id < (int)((blockDim.x + 31) / 32)) ? s_max[lane_id] : -FLT_MAX;
+        float warp_max = (lane_id < (int)((blockDim.x + 63) / 64)) ? s_max[lane_id] : -FLT_MAX;  // 改为63和64
 #pragma unroll
-        for (int offset = 16; offset > 0; offset /= 2)
+        for (int offset = 32; offset > 0; offset /= 2)  // 改为32开始
         {
             warp_max = fmaxf(warp_max, __shfl_down(warp_max, offset));
         }
@@ -404,27 +397,22 @@ __global__ void optimized_flash_qk_kernel(
     }
     __syncthreads();
 
-    // 所有线程获取最大值
     float max_val = s_max[0];
 
-    // 计算指数和总和
+    // 计算softmax - 数值稳定版本
     float thread_sum = 0.0f;
 
     for (int i = tid; i < seq_len; i += blockDim.x)
     {
         float score = scores[head_idx * seq_len + i];
         float exp_val = expf(score - max_val);
-
-        // 存储中间结果
         attn[head_idx * seq_len + i] = exp_val;
-
-        // 累加本地和
         thread_sum += exp_val;
     }
 
-// Warp-level归约计算总和
+    // Warp-level归约计算总和
 #pragma unroll
-    for (int offset = 16; offset > 0; offset /= 2)
+    for (int offset = 32; offset > 0; offset /= 2)  // 改为32开始
     {
         thread_sum += __shfl_down(thread_sum, offset);
     }
@@ -439,9 +427,9 @@ __global__ void optimized_flash_qk_kernel(
     // 最后一个warp处理warp级别的归约
     if (warp_id == 0)
     {
-        float warp_sum = (lane_id < (int)((blockDim.x + 31) / 32)) ? s_sum[lane_id] : 0.0f;
+        float warp_sum = (lane_id < (int)((blockDim.x + 63) / 64)) ? s_sum[lane_id] : 0.0f;  // 改为63和64
 #pragma unroll
-        for (int offset = 16; offset > 0; offset /= 2)
+        for (int offset = 32; offset > 0; offset /= 2)  // 改为32开始
         {
             warp_sum += __shfl_down(warp_sum, offset);
         }
@@ -452,7 +440,6 @@ __global__ void optimized_flash_qk_kernel(
     }
     __syncthreads();
 
-    // 获取总和
     float sum = s_sum[0];
 
     // 归一化
@@ -540,13 +527,15 @@ void GPU_Backend::flash_attention_gpu_step(
     const int HEAD_SIZE = GPU_Backend::HEAD_SIZE;
     const int NUM_HEADS = GPU_Backend::NUM_HEADS;
 
-    // 1. 计算QK点积和Softmax
-    // 每个block处理一个注意力头
+    // 第一阶段：QK计算和Softmax
     dim3 grid_qk(NUM_HEADS);
     dim3 block_qk(BLOCK_SIZE);
+    size_t shmem_size_qk = 2 * BLOCK_SIZE * sizeof(float); // 存储最大值和总和
 
-    // 共享内存大小：最大值和总和归约
-    size_t shmem_size_qk = 2 * BLOCK_SIZE * sizeof(float);
+    // 第二阶段：输出计算
+    dim3 grid_output(NUM_HEADS);
+    dim3 block_output(HEAD_SIZE);
+    size_t shmem_size_output = ((HEAD_SIZE + 63) / 64) * sizeof(float);  // 改为63和64
 
     // 计算QK点积并应用Softmax
     optimized_flash_qk_kernel<<<grid_qk, block_qk, shmem_size_qk, useStream>>>(
@@ -554,14 +543,6 @@ void GPU_Backend::flash_attention_gpu_step(
 
     // 确保QK计算完成
     HIP_CHECK(hipGetLastError());
-
-    // 2. 计算最终输出
-    // 使用1D线程块，每个线程处理一个特征维度
-    dim3 grid_output(NUM_HEADS);
-    dim3 block_output(HEAD_SIZE);
-
-    // 不使用共享内存以保持稳定性
-    size_t shmem_size_output = 0;
 
     // 计算输出
     optimized_flash_output_kernel<<<grid_output, block_output, shmem_size_output, useStream>>>(
