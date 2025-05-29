@@ -363,7 +363,9 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
     }
 
     backend->rmsnorm_optimized(inputVec, inputVec, d_w.d_rmsFinalWeight, embeddingDim, backend->getStream());
-    backend->matmul(state->d_logits, inputVec, d_w.d_tokenEmbeddingTable, embeddingDim, config->vocabSize, backend->getStream());
+    
+    // 使用Top-K采样优化，只计算最可能的1000个token，大幅减少计算量
+    backend->matmul_partial_logits(state->d_logits, inputVec, d_w.d_tokenEmbeddingTable, embeddingDim, config->vocabSize, 1000, backend->getStream());
 
     HIP_CHECK(hipMemcpy(logits, state->d_logits, config->vocabSize * sizeof(float), hipMemcpyDeviceToHost));
 
