@@ -291,7 +291,7 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
     HIP_CHECK(hipMemcpyAsync(inputVec, tokenEmbedding, embeddingDim * sizeof(float), hipMemcpyDeviceToDevice, backend->getStream()));
 
     for (uint64_t layer = 0; layer < config->numLayers; ++layer) {
-        backend->rmsnorm_optimized(state->d_branchActivation, inputVec, d_w.d_rmsAttWeight + layer * embeddingDim, embeddingDim, backend->getStream());
+        backend->rmsnorm(state->d_branchActivation, inputVec, d_w.d_rmsAttWeight + layer * embeddingDim, embeddingDim, backend->getStream());
 
         const int kvCacheOffset = layer * config->maxSeqLen * kvDim;
         state->d_k = state->d_keyCache + kvCacheOffset + pos * kvDim;
@@ -336,7 +336,7 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
             backend->getStream()                        // 流
         );
 
-        backend->rmsnorm_optimized(state->d_branchActivation, inputVec, d_w.d_rmsFfnWeight + layer * embeddingDim, embeddingDim, backend->getStream());
+        backend->rmsnorm(state->d_branchActivation, inputVec, d_w.d_rmsFfnWeight + layer * embeddingDim, embeddingDim, backend->getStream());
         
         // backend->matmul(state->d_hiddenBuffer, state->d_branchActivation, d_w.d_w1 + layer * embeddingDim * ffnHiddenDim, embeddingDim, ffnHiddenDim, backend->getStream());
         // backend->matmul(state->d_extraHiddenBuffer, state->d_branchActivation, d_w.d_w3 + layer * embeddingDim * ffnHiddenDim, embeddingDim, ffnHiddenDim, backend->getStream());
@@ -362,7 +362,7 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
         // backend->axpy(inputVec, state->d_branchActivation, 1.f, embeddingDim, backend->getStream());
     }
 
-    backend->rmsnorm_optimized(inputVec, inputVec, d_w.d_rmsFinalWeight, embeddingDim, backend->getStream());
+    backend->rmsnorm(inputVec, inputVec, d_w.d_rmsFinalWeight, embeddingDim, backend->getStream());
     
     // 回退到完整logits计算以确保正确性
     backend->matmul(state->d_logits, inputVec, d_w.d_tokenEmbeddingTable, embeddingDim, config->vocabSize, backend->getStream());
