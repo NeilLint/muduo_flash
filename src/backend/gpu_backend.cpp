@@ -421,8 +421,8 @@ void GPU_Backend::swiGLLUFunc(float *hb, float *hb2, int hiddenDim, hipStream_t 
     }
 
 
-// 优化的QK计算和Softmax内核 - 改进内存访问模式
-__global__ void optimized_flash_qk_kernel_v2(
+// 优化的QK计算和Softmax内核
+__global__ void optimized_flash_qk_kernel(
     const float* __restrict__ q,
     const float* __restrict__ k_cache,
     float* __restrict__ scores,
@@ -437,21 +437,16 @@ __global__ void optimized_flash_qk_kernel_v2(
     // 获取当前线程在块内的索引
     int tid = threadIdx.x;
     
-    // 共享内存优化：预加载Q向量到共享内存
+    // 共享内存
     extern __shared__ float s_data[];
-    float* s_q = s_data;                                    // Q向量缓存
-    float* s_max = &s_data[head_size];                      // 最大值
-    float* s_sum = &s_data[head_size + blockDim.x];        // 总和
+    float* s_max = s_data;                  // 最大值
+    float* s_sum = &s_data[blockDim.x];     // 总和
     
     // 确保只有有效的线程参与计算
     if (head_idx >= num_heads) return;
     
-    // 协作加载Q向量到共享内存
+    // 访问当前头的q向量
     const float* q_head = q + head_idx * head_size;
-    for (int d = tid; d < head_size; d += blockDim.x) {
-        s_q[d] = q_head[d];
-    }
-    __syncthreads();
     
     // 缩放因子
     const float scale = 1.0f / sqrtf((float)head_size);
@@ -459,17 +454,24 @@ __global__ void optimized_flash_qk_kernel_v2(
     // 计算分数并找到最大值
     float thread_max = -FLT_MAX;
     
-    // 优化的QK点积计算 - 更好的内存访问模式
+    // 计算 QK 点积 (批处理方式，添加循环展开优化)
     for (int i = tid; i < seq_len; i += blockDim.x) {
         float score = 0.0f;
         
-        // 使用共享内存中的Q向量，改善K缓存访问模式
+        // 计算点积 - 添加循环展开以提高性能
         const float* k_vec = k_cache + i * num_heads * head_size + head_idx * head_size;
         
-        // 向量化点积计算
-        #pragma unroll 4
-        for (int d = 0; d < head_size; d++) {
-            score += s_q[d] * k_vec[d];
+        // 展开循环以减少循环开销
+        int d = 0;
+        for (; d + 3 < head_size; d += 4) {
+            score += q_head[d] * k_vec[d] + 
+                     q_head[d+1] * k_vec[d+1] + 
+                     q_head[d+2] * k_vec[d+2] + 
+                     q_head[d+3] * k_vec[d+3];
+        }
+        // 处理剩余元素
+        for (; d < head_size; d++) {
+            score += q_head[d] * k_vec[d];
         }
         
         // 应用缩放
@@ -482,7 +484,6 @@ __global__ void optimized_flash_qk_kernel_v2(
         thread_max = fmaxf(thread_max, score);
     }
     
-    // 其余代码保持不变...
     // 规约找出全局最大值
     s_max[tid] = thread_max;
     __syncthreads();
@@ -536,8 +537,8 @@ __global__ void optimized_flash_qk_kernel_v2(
     }
 }
 
-// 优化的输出计算内核 - 改进并行策略
-__global__ void optimized_flash_output_kernel_v2(
+// 优化的输出计算内核
+__global__ void optimized_flash_output_kernel(
     const float* __restrict__ attn,
     const float* __restrict__ v_cache,
     float* __restrict__ output,
@@ -545,31 +546,18 @@ __global__ void optimized_flash_output_kernel_v2(
     int head_size,
     int num_heads
 ) {
-    // 使用2D线程块：x维度处理特征，y维度处理序列
     int head_idx = blockIdx.x;
     int feat_idx = threadIdx.x;
-    int seq_start = threadIdx.y;
     
     // 确保有效范围
     if (head_idx >= num_heads || feat_idx >= head_size) return;
     
-    // 使用共享内存缓存注意力权重
-    extern __shared__ float s_attn[];
-    
-    // 协作加载注意力权重到共享内存
-    for (int i = seq_start; i < seq_len; i += blockDim.y) {
-        if (feat_idx == 0) {  // 只需要一个线程加载
-            s_attn[i] = attn[head_idx * seq_len + i];
-        }
-    }
-    __syncthreads();
-    
     // 初始化输出累加器
     float acc = 0.0f;
     
-    // 累加加权的V值 - 使用更好的内存访问模式
+    // 累加加权的V值
     for (int i = 0; i < seq_len; i++) {
-        float a = s_attn[i];
+        float a = attn[head_idx * seq_len + i];
         float v = v_cache[i * num_heads * head_size + head_idx * head_size + feat_idx];
         acc += a * v;
     }
@@ -591,8 +579,8 @@ void GPU_Backend::flash_attention_gpu_step(
     // 使用指定的流或默认流
     hipStream_t useStream = stream ? stream : this->stream;
     
-    // 优化的Flash Attention实现
-    const int BLOCK_SIZE = 256;  // 更大的块大小提高并行度
+    // 优化的Flash Attention实现 - 安全版本
+    const int BLOCK_SIZE = 256;  // 恢复更大的块大小以提高性能
     const int HEAD_SIZE = GPU_Backend::HEAD_SIZE;
     const int NUM_HEADS = GPU_Backend::NUM_HEADS;
     
@@ -601,11 +589,11 @@ void GPU_Backend::flash_attention_gpu_step(
     dim3 grid_qk(NUM_HEADS);
     dim3 block_qk(BLOCK_SIZE);
     
-    // 优化的共享内存大小计算：Q向量 + 最大值 + 总和
-    size_t shmem_size_qk = (HEAD_SIZE + 2 * BLOCK_SIZE) * sizeof(float);
+    // 共享内存大小：最大值和总和归约
+    size_t shmem_size_qk = 2 * BLOCK_SIZE * sizeof(float);
     
     // 计算QK点积并应用Softmax
-    optimized_flash_qk_kernel_v2<<<grid_qk, block_qk, shmem_size_qk, useStream>>>(
+    optimized_flash_qk_kernel<<<grid_qk, block_qk, shmem_size_qk, useStream>>>(
         q, k_cache, scores, attn, seq_len, HEAD_SIZE, NUM_HEADS
     );
     
@@ -613,15 +601,15 @@ void GPU_Backend::flash_attention_gpu_step(
     HIP_CHECK(hipGetLastError());
     
     // 2. 计算最终输出
-    // 使用2D线程块优化
+    // 使用1D线程块，每个线程处理一个特征维度
     dim3 grid_output(NUM_HEADS);
-    dim3 block_output(min(HEAD_SIZE, 32), min(seq_len, 8));  // 2D线程块
+    dim3 block_output(HEAD_SIZE);
     
-    // 输出阶段的共享内存：注意力权重缓存
-    size_t shmem_size_output = seq_len * sizeof(float);
+    // 不使用共享内存以保持稳定性
+    size_t shmem_size_output = 0;
     
-    // 使用优化后的内核计算输出
-    optimized_flash_output_kernel_v2<<<grid_output, block_output, shmem_size_output, useStream>>>(
+    // 计算输出
+    optimized_flash_output_kernel<<<grid_output, block_output, shmem_size_output, useStream>>>(
         attn, v_cache, output, seq_len, HEAD_SIZE, NUM_HEADS
     );
     
