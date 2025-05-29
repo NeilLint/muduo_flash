@@ -73,7 +73,7 @@ int TopPSample(float* probabilities, int size, float topP, Candidate* candidates
     return candidates[lastIndex].tokenIndex; 
 }
 
-void CSampler::initializeSampler(int vocabSize, float temperature, float ttopP, unsigned long long rngSeed) {
+void CSampler::initializeSampler(int vocabSize, float temperature, float topP, unsigned long long rngSeed) {
     this->vocabSize = vocabSize;
     this->temperature = temperature;
     this->topP = topP;

@@ -43,18 +43,6 @@ public:
     
     // 优化的RMSNorm：使用更好的内存访问模式和warp-level归约
     void rmsnorm_optimized(float* o, const float* x, const float* weight, int size, hipStream_t stream = nullptr);
-    
-    // 优化的logits计算：只计算部分logits以减少计算量（可选优化）
-    void matmul_partial_logits(float* logits, const float* x, const float* w, int input_dim, int vocab_size, int top_k = 1000, hipStream_t stream = nullptr);
-    
-    // 智能采样优化：基于上下文预测最可能的token集合
-    void smart_sampling_logits(float* logits, const float* x, const float* w, const int* context_tokens, int context_len, int input_dim, int vocab_size, hipStream_t stream = nullptr);
-    
-    // 自适应Top-K：根据采样参数自动调整K值
-    void adaptive_logits(float* logits, const float* x, const float* w, int input_dim, int vocab_size, float temperature, float top_p, hipStream_t stream = nullptr);
-    
-    // 安全的采样优化：在完整logits基础上进行Top-K筛选
-    void optimize_logits_for_sampling(float* logits, int vocab_size, int top_k, hipStream_t stream = nullptr);
 };
 
 #endif // GPU_BACKEND_HPP
