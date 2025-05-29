@@ -37,6 +37,15 @@ public:
     void flash_attention_fused(float* q, float* k_cache, float* v_cache, float* output, int seq_len, hipStream_t stream = nullptr);
     // 融合算子：执行矩阵乘法后立即执行axpy操作
     void matmul_axpy(float* out, const float* x, const float* w, float factor, int n, int d, hipStream_t stream = nullptr);
+    
+    // 融合的QKV分离：直接从QKV结果中提取Q、K、V，避免内存拷贝
+    void extract_qkv(const float* qkv_result, float* q, float* k, float* v, int dim, hipStream_t stream = nullptr);
+    
+    // 优化的RMSNorm：使用更好的内存访问模式和warp-level归约
+    void rmsnorm_optimized(float* o, const float* x, const float* weight, int size, hipStream_t stream = nullptr);
+    
+    // 优化的logits计算：只计算部分logits以减少计算量（可选优化）
+    void matmul_partial_logits(float* logits, const float* x, const float* w, int input_dim, int vocab_size, int top_k = 1000, hipStream_t stream = nullptr);
 };
 
 #endif // GPU_BACKEND_HPP

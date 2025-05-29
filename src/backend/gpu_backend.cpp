@@ -91,6 +91,64 @@ __global__ void rmsnorm_kernel(float* o, const float* x, const float* weight, in
     }
 }
 
+// 优化的RMSNorm内核 - 使用warp-level归约
+__global__ void rmsnorm_optimized_kernel(
+    float* __restrict__ o,
+    const float* __restrict__ x,
+    const float* __restrict__ weight,
+    int size,
+    float epsilon
+) {
+    int tid = threadIdx.x;
+    int warp_id = tid / 32;
+    int lane_id = tid % 32;
+    
+    // 共享内存用于warp间归约
+    extern __shared__ float s_sum[];
+    
+    // 计算线程局部平方和
+    float thread_sum_sq = 0.0f;
+    for (int i = tid; i < size; i += blockDim.x) {
+        float val = x[i];
+        thread_sum_sq += val * val;
+    }
+    
+    // Warp-level归约
+    #pragma unroll
+    for (int offset = 16; offset > 0; offset /= 2) {
+        thread_sum_sq += __shfl_down(thread_sum_sq, offset);
+    }
+    
+    // 每个warp的第一个线程写入共享内存
+    if (lane_id == 0) {
+        s_sum[warp_id] = thread_sum_sq;
+    }
+    __syncthreads();
+    
+    // 最后一个warp处理warp间归约
+    if (warp_id == 0) {
+        float warp_sum = (lane_id < (blockDim.x + 31) / 32) ? s_sum[lane_id] : 0.0f;
+        #pragma unroll
+        for (int offset = 16; offset > 0; offset /= 2) {
+            warp_sum += __shfl_down(warp_sum, offset);
+        }
+        if (lane_id == 0) {
+            s_sum[0] = warp_sum;
+        }
+    }
+    __syncthreads();
+    
+    // 计算归一化因子
+    float total_sum_sq = s_sum[0];
+    float rms = sqrtf(total_sum_sq / (float)size + epsilon);
+    float inv_rms = 1.0f / rms;
+    
+    // 应用归一化和权重
+    for (int i = tid; i < size; i += blockDim.x) {
+        o[i] = (x[i] * inv_rms) * weight[i];
+    }
+}
+
 GPU_Backend::GPU_Backend() : blas_handle(nullptr), stream(nullptr) {
     // 创建HIP流
     HIP_CHECK(hipStreamCreate(&stream));
@@ -229,6 +287,40 @@ void GPU_Backend::rmsnorm(float* o_d,           // 指向 GPU 上的输出缓冲
     // 如果调用者需要确保此操作完成后才能进行后续的 GPU 工作
     // 或需要将结果拷贝回主机，则可能需要在调用此函数 *之后*
     // 由调用者进行同步 (hipDeviceSynchronize 或使用 HIP 流)。
+}
+
+void GPU_Backend::rmsnorm_optimized(
+    float* o,
+    const float* x,
+    const float* weight,
+    int size,
+    hipStream_t stream
+) {
+    if (size <= 0 || !o || !x || !weight) {
+        fprintf(stderr, "RMSNorm_Optimized Error: Invalid input parameters.\n");
+        return;
+    }
+    
+    hipStream_t useStream = stream ? stream : this->stream;
+    
+    const float epsilon = 1e-5f;
+    const int block_size = 256;
+    
+    // 使用单个块处理，共享内存大小为warp数量
+    dim3 gridDim(1);
+    dim3 blockDim(block_size);
+    size_t shared_mem_size = ((block_size + 31) / 32) * sizeof(float);
+    
+    hipLaunchKernelGGL(
+        rmsnorm_optimized_kernel,
+        gridDim,
+        blockDim,
+        shared_mem_size,
+        useStream,
+        o, x, weight, size, epsilon
+    );
+    
+    HIP_CHECK(hipGetLastError());
 }
 
 /*  TODO axpy加速执行 
@@ -712,6 +804,57 @@ void GPU_Backend::matmul_axpy(
         out,             // 输出向量
         1                // 输出向量的步长
     ));
+    
+    HIP_CHECK(hipGetLastError());
+}
+
+// 融合的QKV分离内核 - 避免内存拷贝
+__global__ void extract_qkv_kernel(
+    const float* __restrict__ qkv_result,
+    float* __restrict__ q,
+    float* __restrict__ k, 
+    float* __restrict__ v,
+    int dim
+) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    
+    if (idx < dim) {
+        // 直接从QKV结果中提取对应部分
+        q[idx] = qkv_result[idx];                    // Q部分
+        k[idx] = qkv_result[idx + dim];              // K部分  
+        v[idx] = qkv_result[idx + 2 * dim];          // V部分
+    }
+}
+
+void GPU_Backend::extract_qkv(
+    const float* qkv_result,
+    float* q,
+    float* k,
+    float* v,
+    int dim,
+    hipStream_t stream
+) {
+    // 输入验证
+    if (!qkv_result || !q || !k || !v || dim <= 0) {
+        fprintf(stderr, "GPU extract_qkv Error: Invalid input pointers or dimensions.\n");
+        return;
+    }
+    
+    hipStream_t useStream = stream ? stream : this->stream;
+    
+    // 计算网格和块大小
+    const int threads = 256;
+    const int blocks = (dim + threads - 1) / threads;
+    
+    // 启动内核
+    hipLaunchKernelGGL(
+        extract_qkv_kernel,
+        dim3(blocks),
+        dim3(threads),
+        0,
+        useStream,
+        qkv_result, q, k, v, dim
+    );
     
     HIP_CHECK(hipGetLastError());
 }

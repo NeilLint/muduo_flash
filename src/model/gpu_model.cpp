@@ -291,7 +291,7 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
     HIP_CHECK(hipMemcpyAsync(inputVec, tokenEmbedding, embeddingDim * sizeof(float), hipMemcpyDeviceToDevice, backend->getStream()));
 
     for (uint64_t layer = 0; layer < config->numLayers; ++layer) {
-        backend->rmsnorm(state->d_branchActivation, inputVec, d_w.d_rmsAttWeight + layer * embeddingDim, embeddingDim, backend->getStream());
+        backend->rmsnorm_optimized(state->d_branchActivation, inputVec, d_w.d_rmsAttWeight + layer * embeddingDim, embeddingDim, backend->getStream());
 
         const int kvCacheOffset = layer * config->maxSeqLen * kvDim;
         state->d_k = state->d_keyCache + kvCacheOffset + pos * kvDim;
@@ -304,10 +304,8 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
         // 对输入向量乘以堆叠的QKV权重矩阵，得到堆叠的QKV结果
         backend->matmul(state->d_qkv, state->d_branchActivation, d_w.d_wqkv + layerOffset, embeddingDim, embeddingDim * 3, backend->getStream());
         
-        // 从计算结果中分别提取Q、K、V
-        HIP_CHECK(hipMemcpyAsync(state->d_q, state->d_qkv, config->dim * sizeof(float), hipMemcpyDeviceToDevice, backend->getStream()));
-        HIP_CHECK(hipMemcpyAsync(state->d_k, state->d_qkv + config->dim, config->dim * sizeof(float), hipMemcpyDeviceToDevice, backend->getStream()));
-        HIP_CHECK(hipMemcpyAsync(state->d_v, state->d_qkv + 2 * config->dim, config->dim * sizeof(float), hipMemcpyDeviceToDevice, backend->getStream()));
+        // 使用优化的QKV分离，避免内存拷贝开销
+        backend->extract_qkv(state->d_qkv, state->d_q, state->d_k, state->d_v, config->dim, backend->getStream());
         
         backend->ropeEncoding(state->d_q, state->d_k, headSize, pos, embeddingDim, kvDim, backend->getStream());
 
@@ -338,7 +336,7 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
             backend->getStream()                        // 流
         );
 
-        backend->rmsnorm(state->d_branchActivation, inputVec, d_w.d_rmsFfnWeight + layer * embeddingDim, embeddingDim, backend->getStream());
+        backend->rmsnorm_optimized(state->d_branchActivation, inputVec, d_w.d_rmsFfnWeight + layer * embeddingDim, embeddingDim, backend->getStream());
         
         // backend->matmul(state->d_hiddenBuffer, state->d_branchActivation, d_w.d_w1 + layer * embeddingDim * ffnHiddenDim, embeddingDim, ffnHiddenDim, backend->getStream());
         // backend->matmul(state->d_extraHiddenBuffer, state->d_branchActivation, d_w.d_w3 + layer * embeddingDim * ffnHiddenDim, embeddingDim, ffnHiddenDim, backend->getStream());
@@ -364,7 +362,7 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
         // backend->axpy(inputVec, state->d_branchActivation, 1.f, embeddingDim, backend->getStream());
     }
 
-    backend->rmsnorm(inputVec, inputVec, d_w.d_rmsFinalWeight, embeddingDim, backend->getStream());
+    backend->rmsnorm_optimized(inputVec, inputVec, d_w.d_rmsFinalWeight, embeddingDim, backend->getStream());
     backend->matmul(state->d_logits, inputVec, d_w.d_tokenEmbeddingTable, embeddingDim, config->vocabSize, backend->getStream());
 
     HIP_CHECK(hipMemcpy(logits, state->d_logits, config->vocabSize * sizeof(float), hipMemcpyDeviceToHost));
