@@ -33,6 +33,8 @@ public:
     void ropeEncoding(float *q, float *k, int headSize, int position, int dim, int kvDim, hipStream_t stream = nullptr);
     void swiGLLUFunc(float *hb, float *hb2, int hiddenDim, hipStream_t stream = nullptr);
     void flash_attention_gpu_step(float* q, float* k_cache, float* v_cache, float* output, float* scores, float* attn, int seq_len, hipStream_t stream = nullptr);
+    // 融合版本的Flash Attention：减少内存访问
+    void flash_attention_fused(float* q, float* k_cache, float* v_cache, float* output, int seq_len, hipStream_t stream = nullptr);
     // 融合算子：执行矩阵乘法后立即执行axpy操作
     void matmul_axpy(float* out, const float* x, const float* w, float factor, int n, int d, hipStream_t stream = nullptr);
 };
