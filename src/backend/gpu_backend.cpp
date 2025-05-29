@@ -999,6 +999,96 @@ void GPU_Backend::adaptive_logits(
     matmul_partial_logits(logits, x, w, input_dim, vocab_size, adaptive_k, stream);
 }
 
+// 安全的采样优化内核 - 保留top-k，其他设为负无穷
+__global__ void optimize_logits_kernel(
+    float* __restrict__ logits,
+    int vocab_size,
+    int top_k
+) {
+    int tid = threadIdx.x + blockIdx.x * blockDim.x;
+    
+    // 使用共享内存存储top-k的值和索引
+    extern __shared__ float s_data[];
+    float* s_values = s_data;
+    int* s_indices = (int*)&s_data[top_k];
+    
+    // 初始化共享内存
+    if (tid < top_k) {
+        s_values[tid] = -FLT_MAX;
+        s_indices[tid] = -1;
+    }
+    __syncthreads();
+    
+    // 每个线程处理一个logit值
+    if (tid < vocab_size) {
+        float val = logits[tid];
+        
+        // 找到最小的top-k值
+        for (int i = 0; i < top_k; i++) {
+            if (val > s_values[i]) {
+                // 插入新值，移动其他值
+                for (int j = top_k - 1; j > i; j--) {
+                    s_values[j] = s_values[j-1];
+                    s_indices[j] = s_indices[j-1];
+                }
+                s_values[i] = val;
+                s_indices[i] = tid;
+                break;
+            }
+        }
+    }
+    __syncthreads();
+    
+    // 将不在top-k中的logits设为负无穷
+    if (tid < vocab_size) {
+        bool in_topk = false;
+        for (int i = 0; i < top_k; i++) {
+            if (s_indices[i] == tid) {
+                in_topk = true;
+                break;
+            }
+        }
+        if (!in_topk) {
+            logits[tid] = -FLT_MAX;
+        }
+    }
+}
+
+void GPU_Backend::optimize_logits_for_sampling(
+    float* logits,
+    int vocab_size,
+    int top_k,
+    hipStream_t stream
+) {
+    if (!logits || vocab_size <= 0 || top_k <= 0) {
+        return;
+    }
+    
+    hipStream_t useStream = stream ? stream : this->stream;
+    
+    // 限制top_k不超过vocab_size
+    top_k = std::min(top_k, vocab_size);
+    
+    // 计算网格和块大小
+    const int threads = 256;
+    const int blocks = (vocab_size + threads - 1) / threads;
+    
+    // 共享内存大小：top_k个float + top_k个int
+    size_t shared_mem_size = top_k * (sizeof(float) + sizeof(int));
+    
+    // 启动内核
+    hipLaunchKernelGGL(
+        optimize_logits_kernel,
+        dim3(blocks),
+        dim3(threads),
+        shared_mem_size,
+        useStream,
+        logits, vocab_size, top_k
+    );
+    
+    HIP_CHECK(hipGetLastError());
+}
+
 
 
 

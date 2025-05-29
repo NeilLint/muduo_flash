@@ -52,6 +52,9 @@ public:
     
     // 自适应Top-K：根据采样参数自动调整K值
     void adaptive_logits(float* logits, const float* x, const float* w, int input_dim, int vocab_size, float temperature, float top_p, hipStream_t stream = nullptr);
+    
+    // 安全的采样优化：在完整logits基础上进行Top-K筛选
+    void optimize_logits_for_sampling(float* logits, int vocab_size, int top_k, hipStream_t stream = nullptr);
 };
 
 #endif // GPU_BACKEND_HPP
