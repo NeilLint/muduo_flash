@@ -31,6 +31,17 @@ public:
     // 融合的QKV分离：直接从QKV结果中提取Q、K、V，避免内存拷贝
     void extract_qkv(const float* qkv_result, float* q, float* k, float* v, int dim, hipStream_t stream = nullptr);
     
+    // 融合算子：RMSNorm + MatMul 一步完成，减少内存访问和kernel启动开销
+    void rmsnorm_matmul_fused(
+        float* output,              // 输出结果
+        const float* input,         // 输入向量
+        const float* norm_weight,   // RMSNorm权重
+        const float* matmul_weight, // 矩阵乘法权重
+        int input_dim,              // 输入维度
+        int output_dim,             // 输出维度
+        hipStream_t stream = nullptr
+    );
+    
     // 优化的RMSNorm：使用更好的内存访问模式和warp-level归约
     void rmsnorm(float* o, const float* x, const float* weight, int size, hipStream_t stream = nullptr);
 };
