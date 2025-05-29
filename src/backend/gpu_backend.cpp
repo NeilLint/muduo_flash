@@ -421,7 +421,7 @@ void GPU_Backend::swiGLLUFunc(float *hb, float *hb2, int hiddenDim, hipStream_t 
     }
 
 
-// 优化的QK计算和Softmax内核
+// 优化的QK计算和Softmax内核 - 添加warp-level优化
 __global__ void optimized_flash_qk_kernel(
     const float* __restrict__ q,
     const float* __restrict__ k_cache,
@@ -436,6 +436,8 @@ __global__ void optimized_flash_qk_kernel(
     
     // 获取当前线程在块内的索引
     int tid = threadIdx.x;
+    int warp_id = tid / 32;
+    int lane_id = tid % 32;
     
     // 共享内存
     extern __shared__ float s_data[];
@@ -461,13 +463,18 @@ __global__ void optimized_flash_qk_kernel(
         // 计算点积 - 添加循环展开以提高性能
         const float* k_vec = k_cache + i * num_heads * head_size + head_idx * head_size;
         
-        // 展开循环以减少循环开销
+        // 展开循环以减少循环开销，并添加预取
         int d = 0;
-        for (; d + 3 < head_size; d += 4) {
+        for (; d + 7 < head_size; d += 8) {
+            // 8路展开以更好地利用内存带宽
             score += q_head[d] * k_vec[d] + 
                      q_head[d+1] * k_vec[d+1] + 
                      q_head[d+2] * k_vec[d+2] + 
-                     q_head[d+3] * k_vec[d+3];
+                     q_head[d+3] * k_vec[d+3] +
+                     q_head[d+4] * k_vec[d+4] + 
+                     q_head[d+5] * k_vec[d+5] + 
+                     q_head[d+6] * k_vec[d+6] + 
+                     q_head[d+7] * k_vec[d+7];
         }
         // 处理剩余元素
         for (; d < head_size; d++) {
@@ -484,17 +491,30 @@ __global__ void optimized_flash_qk_kernel(
         thread_max = fmaxf(thread_max, score);
     }
     
-    // 规约找出全局最大值
-    s_max[tid] = thread_max;
+    // Warp-level归约找出最大值（更高效）
+    #pragma unroll
+    for (int offset = 16; offset > 0; offset /= 2) {
+        thread_max = fmaxf(thread_max, __shfl_down(thread_max, offset));
+    }
+    
+    // 每个warp的第一个线程写入共享内存
+    if (lane_id == 0) {
+        s_max[warp_id] = thread_max;
+    }
     __syncthreads();
     
-    // 归约最大值 (效率高的二进制树规约)
-    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
-        if (tid < s) {
-            s_max[tid] = fmaxf(s_max[tid], s_max[tid + s]);
+    // 最后一个warp处理warp级别的归约
+    if (warp_id == 0) {
+        float warp_max = (lane_id < (int)((blockDim.x + 31) / 32)) ? s_max[lane_id] : -FLT_MAX;
+        #pragma unroll
+        for (int offset = 16; offset > 0; offset /= 2) {
+            warp_max = fmaxf(warp_max, __shfl_down(warp_max, offset));
         }
-        __syncthreads();
+        if (lane_id == 0) {
+            s_max[0] = warp_max;
+        }
     }
+    __syncthreads();
     
     // 所有线程获取最大值
     float max_val = s_max[0];
@@ -513,16 +533,30 @@ __global__ void optimized_flash_qk_kernel(
         thread_sum += exp_val;
     }
     
-    // 规约计算总和
-    s_sum[tid] = thread_sum;
+    // Warp-level归约计算总和
+    #pragma unroll
+    for (int offset = 16; offset > 0; offset /= 2) {
+        thread_sum += __shfl_down(thread_sum, offset);
+    }
+    
+    // 每个warp的第一个线程写入共享内存
+    if (lane_id == 0) {
+        s_sum[warp_id] = thread_sum;
+    }
     __syncthreads();
     
-    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
-        if (tid < s) {
-            s_sum[tid] += s_sum[tid + s];
+    // 最后一个warp处理warp级别的归约
+    if (warp_id == 0) {
+        float warp_sum = (lane_id < (int)((blockDim.x + 31) / 32)) ? s_sum[lane_id] : 0.0f;
+        #pragma unroll
+        for (int offset = 16; offset > 0; offset /= 2) {
+            warp_sum += __shfl_down(warp_sum, offset);
         }
-        __syncthreads();
+        if (lane_id == 0) {
+            s_sum[0] = warp_sum;
+        }
     }
+    __syncthreads();
     
     // 获取总和
     float sum = s_sum[0];
@@ -537,7 +571,7 @@ __global__ void optimized_flash_qk_kernel(
     }
 }
 
-// 优化的输出计算内核
+// 优化的输出计算内核 - 添加向量化访问
 __global__ void optimized_flash_output_kernel(
     const float* __restrict__ attn,
     const float* __restrict__ v_cache,
@@ -555,10 +589,31 @@ __global__ void optimized_flash_output_kernel(
     // 初始化输出累加器
     float acc = 0.0f;
     
-    // 累加加权的V值
-    for (int i = 0; i < seq_len; i++) {
-        float a = attn[head_idx * seq_len + i];
-        float v = v_cache[i * num_heads * head_size + head_idx * head_size + feat_idx];
+    // 预计算基础偏移量
+    const float* attn_head = attn + head_idx * seq_len;
+    const float* v_base = v_cache + head_idx * head_size + feat_idx;
+    
+    // 优化的累加循环 - 展开以提高性能
+    int i = 0;
+    for (; i + 3 < seq_len; i += 4) {
+        // 4路展开以更好地利用内存带宽和指令级并行
+        float a0 = attn_head[i];
+        float a1 = attn_head[i+1];
+        float a2 = attn_head[i+2];
+        float a3 = attn_head[i+3];
+        
+        float v0 = v_base[i * num_heads * head_size];
+        float v1 = v_base[(i+1) * num_heads * head_size];
+        float v2 = v_base[(i+2) * num_heads * head_size];
+        float v3 = v_base[(i+3) * num_heads * head_size];
+        
+        acc += a0 * v0 + a1 * v1 + a2 * v2 + a3 * v3;
+    }
+    
+    // 处理剩余元素
+    for (; i < seq_len; i++) {
+        float a = attn_head[i];
+        float v = v_base[i * num_heads * head_size];
         acc += a * v;
     }
     
