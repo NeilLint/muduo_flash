@@ -33,7 +33,7 @@
     }
 
 // 优化的RMSNorm内核 - 使用warp-level归约
-__global__ void rmsnorm_kernel(
+__global__ void __launch_bounds__(512) rmsnorm_kernel(
     float *__restrict__ o,
     const float *__restrict__ x,
     const float *__restrict__ weight,
@@ -41,8 +41,8 @@ __global__ void rmsnorm_kernel(
     float epsilon)
 {
     int tid = threadIdx.x;
-    int warp_id = tid / 64;
-    int lane_id = tid % 64;
+    int warp_id = tid / 64;  // 改为64
+    int lane_id = tid % 64;  // 改为64
 
     // 使用共享内存进行warp间归约
     extern __shared__ float s_sum[];
@@ -57,7 +57,7 @@ __global__ void rmsnorm_kernel(
 
     // Warp-level归约
 #pragma unroll
-    for (int offset = 32; offset > 0; offset /= 2)
+    for (int offset = 32; offset > 0; offset /= 2)  // 改为32开始
     {
         thread_sum_sq += __shfl_down(thread_sum_sq, offset);
     }
@@ -72,9 +72,9 @@ __global__ void rmsnorm_kernel(
     // 最后一个warp处理warp间归约
     if (warp_id == 0)
     {
-        float warp_sum = (lane_id < (blockDim.x + 63) / 64) ? s_sum[lane_id] : 0.0f;
+        float warp_sum = (lane_id < (blockDim.x + 63) / 64) ? s_sum[lane_id] : 0.0f;  // 改为63
 #pragma unroll
-        for (int offset = 32; offset > 0; offset /= 2)
+        for (int offset = 32; offset > 0; offset /= 2)  // 改为32开始
         {
             warp_sum += __shfl_down(warp_sum, offset);
         }
@@ -189,12 +189,12 @@ void GPU_Backend::rmsnorm(
     hipStream_t useStream = stream ? stream : this->stream;
 
     const float epsilon = 1e-5f;
-    const int block_size = 256;
+    const int block_size = 256;  // 改回256确保稳定性
 
     // 使用单个块处理，共享内存大小为warp数量
     dim3 gridDim(1);
     dim3 blockDim(block_size);
-    size_t shared_mem_size = ((block_size + 63) / 64) * sizeof(float);  // 改为63和64
+    size_t shared_mem_size = ((block_size + 63) / 64) * sizeof(float);
 
     hipLaunchKernelGGL(
         rmsnorm_kernel,
@@ -301,7 +301,7 @@ void GPU_Backend::swiGLLUFunc(float *hb, float *hb2, int hiddenDim, hipStream_t 
 }
 
 // 优化的QK计算和Softmax内核 - 添加warp-level优化
-__global__ void optimized_flash_qk_kernel(
+__global__ void __launch_bounds__(512) optimized_flash_qk_kernel(
     const float *__restrict__ q,
     const float *__restrict__ k_cache,
     float *__restrict__ scores,
@@ -522,8 +522,8 @@ void GPU_Backend::flash_attention_gpu_step(
     // 使用指定的流或默认流
     hipStream_t useStream = stream ? stream : this->stream;
 
-    // 优化的Flash Attention实现 - 安全版本
-    const int BLOCK_SIZE = 256; // 恢复更大的块大小以提高性能
+    // 优化的Flash Attention实现 - 针对gfx906优化
+    const int BLOCK_SIZE = 256; // 改回256确保稳定性
     const int HEAD_SIZE = GPU_Backend::HEAD_SIZE;
     const int NUM_HEADS = GPU_Backend::NUM_HEADS;
 
@@ -535,7 +535,7 @@ void GPU_Backend::flash_attention_gpu_step(
     // 第二阶段：输出计算
     dim3 grid_output(NUM_HEADS);
     dim3 block_output(HEAD_SIZE);
-    size_t shmem_size_output = ((HEAD_SIZE + 63) / 64) * sizeof(float);  // 改为63和64
+    size_t shmem_size_output = ((HEAD_SIZE + 63) / 64) * sizeof(float);
 
     // 计算QK点积并应用Softmax
     optimized_flash_qk_kernel<<<grid_qk, block_qk, shmem_size_qk, useStream>>>(
