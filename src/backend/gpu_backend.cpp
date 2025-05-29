@@ -648,137 +648,91 @@ void GPU_Backend::extract_qkv(
     HIP_CHECK(hipGetLastError());
 }
 
-// 融合内核：RMSNorm + MatMul
-__global__ void __launch_bounds__(256) rmsnorm_matmul_fused_kernel(
+// 优化版本的矩阵乘法：使用更好的线程块布局
+__global__ void __launch_bounds__(256) optimized_matmul_kernel(
     float* __restrict__ output,
     const float* __restrict__ input,
-    const float* __restrict__ norm_weight,
-    const float* __restrict__ matmul_weight,
+    const float* __restrict__ weight,
     int input_dim,
-    int output_dim,
-    float epsilon
+    int output_dim
 ) {
-    // 每个block负责计算输出的一部分
     int output_idx = blockIdx.x * blockDim.x + threadIdx.x;
     
     if (output_idx >= output_dim) return;
     
-    // 共享内存用于存储归一化后的输入向量的部分
-    extern __shared__ float s_normalized_input[];
-    
-    int tid = threadIdx.x;
-    int warp_id = tid / 64;
-    int lane_id = tid % 64;
-    
-    // 第一步：计算RMSNorm
-    // 使用共享内存进行规约
-    __shared__ float s_sum[4]; // 最多4个warp
-    
-    float thread_sum_sq = 0.0f;
-    
-    // 计算平方和
-    for (int i = tid; i < input_dim; i += blockDim.x) {
-        float val = input[i];
-        thread_sum_sq += val * val;
-    }
-    
-    // Warp-level归约
-    #pragma unroll
-    for (int offset = 32; offset > 0; offset /= 2) {
-        thread_sum_sq += __shfl_down(thread_sum_sq, offset);
-    }
-    
-    if (lane_id == 0) {
-        s_sum[warp_id] = thread_sum_sq;
-    }
-    __syncthreads();
-    
-    // 最后一个warp处理warp间归约
-    if (warp_id == 0) {
-        float warp_sum = (lane_id < (blockDim.x + 63) / 64) ? s_sum[lane_id] : 0.0f;
-        #pragma unroll
-        for (int offset = 32; offset > 0; offset /= 2) {
-            warp_sum += __shfl_down(warp_sum, offset);
-        }
-        if (lane_id == 0) {
-            s_sum[0] = warp_sum;
-        }
-    }
-    __syncthreads();
-    
-    // 计算RMS
-    float total_sum_sq = s_sum[0];
-    float rms = sqrtf(total_sum_sq / (float)input_dim + epsilon);
-    float inv_rms = 1.0f / rms;
-    
-    // 第二步：应用归一化并直接计算矩阵乘法
     float result = 0.0f;
     
-    // 展开循环以提高效率
+    // 使用8路展开以提高内存带宽利用率
     int i = 0;
     for (; i + 7 < input_dim; i += 8) {
-        // 8路展开
-        float norm_vals[8];
-        norm_vals[0] = (input[i] * inv_rms) * norm_weight[i];
-        norm_vals[1] = (input[i+1] * inv_rms) * norm_weight[i+1];
-        norm_vals[2] = (input[i+2] * inv_rms) * norm_weight[i+2];
-        norm_vals[3] = (input[i+3] * inv_rms) * norm_weight[i+3];
-        norm_vals[4] = (input[i+4] * inv_rms) * norm_weight[i+4];
-        norm_vals[5] = (input[i+5] * inv_rms) * norm_weight[i+5];
-        norm_vals[6] = (input[i+6] * inv_rms) * norm_weight[i+6];
-        norm_vals[7] = (input[i+7] * inv_rms) * norm_weight[i+7];
+        float input_vals[8];
+        float weight_vals[8];
         
-        // 矩阵乘法 - 转置访问
-        result += norm_vals[0] * matmul_weight[output_idx * input_dim + i] +
-                  norm_vals[1] * matmul_weight[output_idx * input_dim + i + 1] +
-                  norm_vals[2] * matmul_weight[output_idx * input_dim + i + 2] +
-                  norm_vals[3] * matmul_weight[output_idx * input_dim + i + 3] +
-                  norm_vals[4] * matmul_weight[output_idx * input_dim + i + 4] +
-                  norm_vals[5] * matmul_weight[output_idx * input_dim + i + 5] +
-                  norm_vals[6] * matmul_weight[output_idx * input_dim + i + 6] +
-                  norm_vals[7] * matmul_weight[output_idx * input_dim + i + 7];
+        // 预加载输入值
+        input_vals[0] = input[i];
+        input_vals[1] = input[i+1];
+        input_vals[2] = input[i+2];
+        input_vals[3] = input[i+3];
+        input_vals[4] = input[i+4];
+        input_vals[5] = input[i+5];
+        input_vals[6] = input[i+6];
+        input_vals[7] = input[i+7];
+        
+        // 预加载权重值（转置访问）
+        weight_vals[0] = weight[output_idx * input_dim + i];
+        weight_vals[1] = weight[output_idx * input_dim + i + 1];
+        weight_vals[2] = weight[output_idx * input_dim + i + 2];
+        weight_vals[3] = weight[output_idx * input_dim + i + 3];
+        weight_vals[4] = weight[output_idx * input_dim + i + 4];
+        weight_vals[5] = weight[output_idx * input_dim + i + 5];
+        weight_vals[6] = weight[output_idx * input_dim + i + 6];
+        weight_vals[7] = weight[output_idx * input_dim + i + 7];
+        
+        // 计算点积
+        result += input_vals[0] * weight_vals[0] +
+                  input_vals[1] * weight_vals[1] +
+                  input_vals[2] * weight_vals[2] +
+                  input_vals[3] * weight_vals[3] +
+                  input_vals[4] * weight_vals[4] +
+                  input_vals[5] * weight_vals[5] +
+                  input_vals[6] * weight_vals[6] +
+                  input_vals[7] * weight_vals[7];
     }
     
     // 处理剩余元素
     for (; i < input_dim; i++) {
-        float norm_val = (input[i] * inv_rms) * norm_weight[i];
-        result += norm_val * matmul_weight[output_idx * input_dim + i];
+        result += input[i] * weight[output_idx * input_dim + i];
     }
     
     output[output_idx] = result;
 }
 
-void GPU_Backend::rmsnorm_matmul_fused(
+void GPU_Backend::matmul_optimized(
     float* output,
     const float* input,
-    const float* norm_weight,
-    const float* matmul_weight,
+    const float* weight,
     int input_dim,
     int output_dim,
     hipStream_t stream
 ) {
-    if (!output || !input || !norm_weight || !matmul_weight || 
-        input_dim <= 0 || output_dim <= 0) {
-        fprintf(stderr, "GPU rmsnorm_matmul_fused Error: Invalid input parameters.\n");
+    if (!output || !input || !weight || input_dim <= 0 || output_dim <= 0) {
+        fprintf(stderr, "GPU matmul_optimized Error: Invalid input parameters.\n");
         return;
     }
     
     hipStream_t useStream = stream ? stream : this->stream;
     
-    const float epsilon = 1e-5f;
+    // 使用更大的线程块以提高并行度
     const int block_size = 256;
     const int grid_size = (output_dim + block_size - 1) / block_size;
     
-    // 共享内存大小：用于存储部分归一化结果
-    size_t shared_mem_size = block_size * sizeof(float);
-    
     hipLaunchKernelGGL(
-        rmsnorm_matmul_fused_kernel,
+        optimized_matmul_kernel,
         dim3(grid_size),
         dim3(block_size),
-        shared_mem_size,
+        0,
         useStream,
-        output, input, norm_weight, matmul_weight, input_dim, output_dim, epsilon
+        output, input, weight, input_dim, output_dim
     );
     
     HIP_CHECK(hipGetLastError());

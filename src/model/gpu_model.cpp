@@ -291,30 +291,23 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
     HIP_CHECK(hipMemcpyAsync(inputVec, tokenEmbedding, embeddingDim * sizeof(float), hipMemcpyDeviceToDevice, backend->getStream()));
 
     for (uint64_t layer = 0; layer < config->numLayers; ++layer) {
-        // 使用融合的RMSNorm + QKV矩阵乘法
-        backend->rmsnorm_matmul_fused(
-            state->d_qkv,                                    // 输出：QKV结果
-            inputVec,                                        // 输入：当前激活
-            d_w.d_rmsAttWeight + layer * embeddingDim,       // RMSNorm权重
-            d_w.d_wqkv + layer * 3 * embeddingDim * embeddingDim, // QKV权重矩阵
-            embeddingDim,                                    // 输入维度
-            embeddingDim * 3,                               // 输出维度(Q+K+V)
-            backend->getStream()
-        );
+        backend->rmsnorm(state->d_branchActivation, inputVec, d_w.d_rmsAttWeight + layer * embeddingDim, embeddingDim, backend->getStream());
 
         const int kvCacheOffset = layer * config->maxSeqLen * kvDim;
         state->d_k = state->d_keyCache + kvCacheOffset + pos * kvDim;
         state->d_v = state->d_valueCache + kvCacheOffset + pos * kvDim;
+        
+        // 计算QKV权重矩阵在设备内存中的偏移
+        size_t layerOffset = layer * 3 * embeddingDim * embeddingDim;
+        
+        // 使用一次矩阵乘法同时计算Q、K、V投影
+        backend->matmul(state->d_qkv, state->d_branchActivation, d_w.d_wqkv + layerOffset, embeddingDim, embeddingDim * 3, backend->getStream());
         
         // 使用优化的QKV分离，避免内存拷贝开销
         backend->extract_qkv(state->d_qkv, state->d_q, state->d_k, state->d_v, config->dim, backend->getStream());
         
         backend->ropeEncoding(state->d_q, state->d_k, headSize, pos, embeddingDim, kvDim, backend->getStream());
 
-        
-        // 自注意力机制后同步，确保Q、K已准备好
-        // 
-        
         // 使用flash attention实现
         backend->flash_attention_gpu_step(
             state->d_q,                    // 查询向量
@@ -338,16 +331,10 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
             backend->getStream()                        // 流
         );
 
-        // 使用融合的RMSNorm + FFN第一部分
-        backend->rmsnorm_matmul_fused(
-            state->d_hiddenBuffer_extraHiddenBuffer,        // 输出：W1+W3结果
-            inputVec,                                        // 输入：当前激活
-            d_w.d_rmsFfnWeight + layer * embeddingDim,       // FFN RMSNorm权重
-            d_w.d_w1_w3 + layer * 2 * embeddingDim * ffnHiddenDim, // W1+W3权重矩阵
-            embeddingDim,                                    // 输入维度
-            2 * ffnHiddenDim,                               // 输出维度(W1+W3)
-            backend->getStream()
-        );
+        backend->rmsnorm(state->d_branchActivation, inputVec, d_w.d_rmsFfnWeight + layer * embeddingDim, embeddingDim, backend->getStream());
+        
+        // 使用一次矩阵乘法，同时计算两个矩阵
+        backend->matmul(state->d_hiddenBuffer_extraHiddenBuffer, state->d_branchActivation, d_w.d_w1_w3 + layer * 2 * embeddingDim * ffnHiddenDim, embeddingDim, 2 * ffnHiddenDim, backend->getStream());
 
         // 使用后端的swiGLLUFunc实现
         backend->swiGLLUFunc(state->d_hiddenBuffer, state->d_extraHiddenBuffer, ffnHiddenDim, backend->getStream());
@@ -362,10 +349,6 @@ float* GPU_Model::forward(int token, int pos, GPU_Backend *backend,float *logits
             embeddingDim,                               // 输出维度
             backend->getStream()                        // 流
         );
-        
-        // 原先的代码被注释掉：
-        // backend->matmul(state->d_branchActivation, state->d_hiddenBuffer, d_w.d_w2 + layer * ffnHiddenDim * embeddingDim, ffnHiddenDim, embeddingDim, backend->getStream());
-        // backend->axpy(inputVec, state->d_branchActivation, 1.f, embeddingDim, backend->getStream());
     }
 
     backend->rmsnorm(inputVec, inputVec, d_w.d_rmsFinalWeight, embeddingDim, backend->getStream());
