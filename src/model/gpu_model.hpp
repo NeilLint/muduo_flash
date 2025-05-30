@@ -59,6 +59,7 @@ public:
     void initializeModel(const std::string checkpointPath);
     void mapWeightsToMemory(CModelConfig* modelConfig, float* ptr, int sharedWeights);
     void transferWeightsToDevice(); // 将权重从主机复制到设备
+    void releaseCPUWeights(); // 释放CPU权重内存映射
     void freeModel();
 };
 

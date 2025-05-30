@@ -248,11 +248,15 @@ void GPU_Model::initializeModel(const std::string checkpointPath) {
     load(checkpointPath, &config, &fd, &data, &fileSize);
     state.allocateGPUMemory(&config);
     transferWeightsToDevice();
+    // 权重已完全传输到GPU，释放CPU内存映射
+    releaseCPUWeights();
 }
 
 
 void GPU_Model::freeModel() {
+    // CPU权重内存可能已经在releaseCPUWeights()中释放，进行安全检查
     if (data != MAP_FAILED && data != nullptr) {
+        printf("[INFO] freeModel: 发现CPU权重内存尚未释放，现在释放\n");
         munmap(data, fileSize);
         data = nullptr;
     }
@@ -261,16 +265,28 @@ void GPU_Model::freeModel() {
         close(fd);
         fd = -1;
     }
+    
     // 释放GPU内存
     // 释放保存在GPU上的权重
-    HIP_CHECK(hipFree(d_w.d_tokenEmbeddingTable));
-    HIP_CHECK(hipFree(d_w.d_rmsAttWeight));    
-    HIP_CHECK(hipFree(d_w.d_wo));
-    HIP_CHECK(hipFree(d_w.d_w1_w3));
-    HIP_CHECK(hipFree(d_w.d_w2));
-    HIP_CHECK(hipFree(d_w.d_rmsFinalWeight));
-    HIP_CHECK(hipFree(d_w.d_wcls));
-    HIP_CHECK(hipFree(d_w.d_wqkv));
+    if (d_w.d_tokenEmbeddingTable) HIP_CHECK(hipFree(d_w.d_tokenEmbeddingTable));
+    if (d_w.d_rmsAttWeight) HIP_CHECK(hipFree(d_w.d_rmsAttWeight));    
+    if (d_w.d_wo) HIP_CHECK(hipFree(d_w.d_wo));
+    if (d_w.d_w1_w3) HIP_CHECK(hipFree(d_w.d_w1_w3));
+    if (d_w.d_w2) HIP_CHECK(hipFree(d_w.d_w2));
+    if (d_w.d_rmsFinalWeight) HIP_CHECK(hipFree(d_w.d_rmsFinalWeight));
+    if (d_w.d_wcls) HIP_CHECK(hipFree(d_w.d_wcls));
+    if (d_w.d_wqkv) HIP_CHECK(hipFree(d_w.d_wqkv));
+    
+    // 将GPU权重指针置为nullptr
+    d_w.d_tokenEmbeddingTable = nullptr;
+    d_w.d_rmsAttWeight = nullptr;
+    d_w.d_wo = nullptr;
+    d_w.d_w1_w3 = nullptr;
+    d_w.d_w2 = nullptr;
+    d_w.d_rmsFinalWeight = nullptr;
+    d_w.d_wcls = nullptr;
+    d_w.d_wqkv = nullptr;
+    
     // 释放保存在GPU上的运行状态内存
     state.deallocateGPUMemory();
 }
@@ -415,6 +431,34 @@ void GPU_Model::transferWeightsToDevice() {
         HIP_CHECK(hipMemcpy(d_w.d_w1_w3 + layerOffset, h_w1_ptr, w1_w3_size * sizeof(float), hipMemcpyHostToDevice));
         HIP_CHECK(hipMemcpy(d_w.d_w1_w3 + layerOffset + w1_w3_size, h_w3_ptr, w1_w3_size * sizeof(float), hipMemcpyHostToDevice));
     }
+    
+    printf("[INFO] 权重已成功传输到GPU，准备释放CPU内存映射\n");
+}
 
+void GPU_Model::releaseCPUWeights() {
+    if (data != MAP_FAILED && data != nullptr) {
+        printf("[INFO] 释放CPU权重内存映射，节省 %.2f MB 内存\n", fileSize / (1024.0 * 1024.0));
+        munmap(data, fileSize);
+        data = nullptr;
+        
+        // 将所有CPU权重指针置为nullptr，防止意外访问
+        h_w.tokenEmbeddingTable = nullptr;
+        h_w.rmsAttWeight = nullptr;
+        h_w.rmsFfnWeight = nullptr;
+        h_w.wq = nullptr;
+        h_w.wk = nullptr;
+        h_w.wv = nullptr;
+        h_w.wo = nullptr;
+        h_w.w1 = nullptr;
+        h_w.w2 = nullptr;
+        h_w.w3 = nullptr;
+        h_w.rmsFinalWeight = nullptr;
+        h_w.wcls = nullptr;
+    }
+    
+    if (fd != -1) {
+        close(fd);
+        fd = -1;
+    }
 }
 
