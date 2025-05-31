@@ -408,6 +408,7 @@ void GPU_Model::forward(int token, int pos, GPU_Backend *backend)
     backend->matmul(state->d_logits, inputVec, d_w.d_tokenEmbeddingTable, embeddingDim, config->vocabSize, backend->getStream());
 
     HIP_CHECK(hipMemcpy(state->h_logits, state->d_logits, config->vocabSize * sizeof(float), hipMemcpyDeviceToHost));
+    return;
 }
 
 void GPU_Model::transferWeightsToDevice()

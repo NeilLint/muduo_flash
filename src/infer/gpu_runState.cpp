@@ -5,30 +5,27 @@ GPU_RunState::GPU_RunState()
     : d_currentActivation(nullptr), d_branchActivation(nullptr), d_extraBuffer(nullptr),
       d_hiddenBuffer(nullptr), d_extraHiddenBuffer(nullptr), d_q(nullptr), d_k(nullptr),
       d_v(nullptr), d_attentionScores(nullptr), d_logits(nullptr),
-      d_keyCache(nullptr), d_valueCache(nullptr), d_scores(nullptr), d_attn(nullptr), d_qkv(nullptr)
+      d_keyCache(nullptr), d_valueCache(nullptr), d_scores(nullptr), d_attn(nullptr), d_qkv(nullptr), h_logits(nullptr)
 {
-    h_logits = static_cast<float *>(malloc(config->vocabSize * sizeof(float)));
 }
 
 GPU_RunState::~GPU_RunState()
 {
     // 确保所有GPU内存都已释放
     deallocateGPUMemory();
-    free(h_logits);
 }
 
 void GPU_RunState::allocateGPUMemory(CModelConfig *config)
 {
     // 先释放可能已分配的内存
     deallocateGPUMemory();
-    // printf("AllocatingGPUMemory\n");
+    
+    // 分配主机内存
+    if (!h_logits) {
+        h_logits = static_cast<float *>(malloc(config->vocabSize * sizeof(float)));
+    }
+    
     int kvDim = (config->dim * config->numKvHeads) / config->numKvHeads;
-    // printf("config->dim = %d\n",config->dim);
-    // printf("config->feedForwardDim = %d\n",config->feedForwardDim);
-    // printf("config->numLayers = %d\n",config->numLayers);
-    // printf("config->heads = %d\n",config->numHeads);
-    // printf("Config->maxSeqLen = %d\n",config->maxSeqLen);
-    // printf("Config->numKVHeads = %d\n",config->numKvHeads);
     // 分配设备内存
     HIP_CHECK(hipMalloc((void **)&d_currentActivation, config->dim * sizeof(float)));
     HIP_CHECK(hipMalloc((void **)&d_branchActivation, config->dim * sizeof(float)));
@@ -60,7 +57,7 @@ void GPU_RunState::allocateGPUMemory(CModelConfig *config)
     HIP_CHECK(hipMemset(d_scores, 0, config->numHeads * config->maxSeqLen * sizeof(float)));
     HIP_CHECK(hipMemset(d_attn, 0, config->numHeads * config->maxSeqLen * sizeof(float)));
     HIP_CHECK(hipMemset(d_qkv, 0, 3 * config->dim * sizeof(float)));
-    // std::cout << "[INFO:] GPU memory allocation successful!" << std::endl;
+    
     // 设定 d_hiddenBuffer
     d_hiddenBuffer = d_hiddenBuffer_extraHiddenBuffer;
     d_extraHiddenBuffer = d_hiddenBuffer_extraHiddenBuffer + config->feedForwardDim;
@@ -68,6 +65,12 @@ void GPU_RunState::allocateGPUMemory(CModelConfig *config)
 
 void GPU_RunState::deallocateGPUMemory()
 {
+    // 释放主机内存
+    if (h_logits) {
+        free(h_logits);
+        h_logits = nullptr;
+    }
+    
     if (d_hiddenBuffer)
     {
         d_hiddenBuffer = nullptr;
@@ -146,7 +149,6 @@ void GPU_RunState::deallocateGPUMemory()
         HIP_CHECK(hipFree(d_qkv));
         d_qkv = nullptr;
     }
-    // std::cout << "[INFO:] GPU memory deallocation successful!" << std::endl;
 }
 
 void GPU_RunState::copyToGPU(CRunState *cpuState, CModelConfig *config)
