@@ -41,7 +41,7 @@ __global__ void __launch_bounds__(512) rmsnorm_kernel(
 {
     int tid = threadIdx.x;
     int warp_id = tid / 64;
-    int lane_id = tid % 64;
+    unsigned int lane_id = tid % 64;
 
     // 使用共享内存进行warp间归约
     extern __shared__ float s_sum[];
@@ -290,7 +290,7 @@ __global__ void __launch_bounds__(512) optimized_flash_qk_kernel(
     int head_idx = blockIdx.x;
     int tid = threadIdx.x;
     int warp_id = tid / 64;
-    int lane_id = tid % 64;
+    unsigned int lane_id = tid % 64;
 
     extern __shared__ float s_data[];
     float *s_max = s_data;
@@ -344,7 +344,7 @@ __global__ void __launch_bounds__(512) optimized_flash_qk_kernel(
 
     if (warp_id == 0)
     {
-        float warp_max = (lane_id < (int)((blockDim.x + 63) / 64)) ? s_max[lane_id] : -FLT_MAX;
+        float warp_max = (lane_id < (blockDim.x + 63) / 64) ? s_max[lane_id] : -FLT_MAX;
 #pragma unroll
         for (int offset = 32; offset > 0; offset /= 2)
         {
@@ -382,7 +382,7 @@ __global__ void __launch_bounds__(512) optimized_flash_qk_kernel(
 
     if (warp_id == 0)
     {
-        float warp_sum = (lane_id < (int)((blockDim.x + 63) / 64)) ? s_sum[lane_id] : 0.0f;
+        float warp_sum = ((unsigned)lane_id < (blockDim.x + 63) / 64) ? s_sum[lane_id] : 0.0f;
 #pragma unroll
         for (int offset = 32; offset > 0; offset /= 2)
         {

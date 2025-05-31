@@ -340,7 +340,7 @@ void GPU_Model::forward(int token, int pos, GPU_Backend *backend)
     float *tokenEmbedding = d_w.d_tokenEmbeddingTable + token * embeddingDim;
     HIP_CHECK(hipMemcpyAsync(inputVec, tokenEmbedding, embeddingDim * sizeof(float), hipMemcpyDeviceToDevice, backend->getStream()));
 
-    for (uint64_t layer = 0; layer < config->numLayers; ++layer)
+    for (int layer = 0; layer < config->numLayers; ++layer)
     {
         backend->rmsnorm(state->d_branchActivation, inputVec, d_w.d_rmsAttWeight + layer * embeddingDim, embeddingDim, backend->getStream());
 
@@ -413,7 +413,6 @@ void GPU_Model::forward(int token, int pos, GPU_Backend *backend)
 
 void GPU_Model::transferWeightsToDevice()
 {
-    const int headSize = config.dim / config.numHeads;
     const uint64_t numLayers = config.numLayers;
 
     // 为GPU分配内存

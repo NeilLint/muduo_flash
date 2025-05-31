@@ -3,9 +3,10 @@
 
 GPU_RunState::GPU_RunState()
     : d_currentActivation(nullptr), d_branchActivation(nullptr), d_extraBuffer(nullptr),
-      d_hiddenBuffer(nullptr), d_extraHiddenBuffer(nullptr), d_q(nullptr), d_k(nullptr),
-      d_v(nullptr), d_attentionScores(nullptr), d_logits(nullptr),
-      d_keyCache(nullptr), d_valueCache(nullptr), d_scores(nullptr), d_attn(nullptr), d_qkv(nullptr), h_logits(nullptr)
+      d_hiddenBuffer_extraHiddenBuffer(nullptr), d_hiddenBuffer(nullptr), d_extraHiddenBuffer(nullptr), 
+      d_q(nullptr), d_k(nullptr), d_v(nullptr), d_attentionScores(nullptr), d_logits(nullptr), 
+      h_logits(nullptr), d_keyCache(nullptr), d_valueCache(nullptr), d_scores(nullptr), 
+      d_attn(nullptr), d_qkv(nullptr)
 {
 }
 
@@ -17,9 +18,6 @@ GPU_RunState::~GPU_RunState()
 
 void GPU_RunState::allocateGPUMemory(CModelConfig *config)
 {
-    // 先释放可能已分配的内存
-    deallocateGPUMemory();
-    
     // 分配主机内存
     if (!h_logits) {
         h_logits = static_cast<float *>(malloc(config->vocabSize * sizeof(float)));
@@ -32,8 +30,6 @@ void GPU_RunState::allocateGPUMemory(CModelConfig *config)
     HIP_CHECK(hipMalloc((void **)&d_hiddenBuffer_extraHiddenBuffer, 2 * config->feedForwardDim * sizeof(float)));
     HIP_CHECK(hipMalloc((void **)&d_extraBuffer, config->dim * sizeof(float)));
     HIP_CHECK(hipMalloc((void **)&d_q, config->dim * sizeof(float)));
-    HIP_CHECK(hipMalloc((void **)&d_k, config->dim * sizeof(float)));
-    HIP_CHECK(hipMalloc((void **)&d_v, config->dim * sizeof(float)));
     HIP_CHECK(hipMalloc((void **)&d_keyCache, config->numLayers * config->maxSeqLen * kvDim * sizeof(float)));
     HIP_CHECK(hipMalloc((void **)&d_valueCache, config->numLayers * config->maxSeqLen * kvDim * sizeof(float)));
     HIP_CHECK(hipMalloc((void **)&d_attentionScores, config->numHeads * config->maxSeqLen * sizeof(float)));
@@ -48,8 +44,6 @@ void GPU_RunState::allocateGPUMemory(CModelConfig *config)
     HIP_CHECK(hipMemset(d_extraBuffer, 0, config->dim * sizeof(float)));
     HIP_CHECK(hipMemset(d_hiddenBuffer_extraHiddenBuffer, 0, 2 * config->feedForwardDim * sizeof(float)));
     HIP_CHECK(hipMemset(d_q, 0, config->dim * sizeof(float)));
-    HIP_CHECK(hipMemset(d_k, 0, config->dim * sizeof(float)));
-    HIP_CHECK(hipMemset(d_v, 0, config->dim * sizeof(float)));
     HIP_CHECK(hipMemset(d_keyCache, 0, config->numLayers * config->maxSeqLen * kvDim * sizeof(float)));
     HIP_CHECK(hipMemset(d_valueCache, 0, config->numLayers * config->maxSeqLen * kvDim * sizeof(float)));
     HIP_CHECK(hipMemset(d_attentionScores, 0, config->numHeads * config->maxSeqLen * sizeof(float)));
@@ -71,6 +65,7 @@ void GPU_RunState::deallocateGPUMemory()
         h_logits = nullptr;
     }
     
+    // 安全释放GPU内存 - 使用hipError_t避免崩溃
     if (d_hiddenBuffer)
     {
         d_hiddenBuffer = nullptr;
@@ -106,12 +101,10 @@ void GPU_RunState::deallocateGPUMemory()
     }
     if (d_k)
     {
-        HIP_CHECK(hipFree(d_k));
         d_k = nullptr;
     }
     if (d_v)
     {
-        HIP_CHECK(hipFree(d_v));
         d_v = nullptr;
     }
     if (d_attentionScores)
@@ -126,12 +119,12 @@ void GPU_RunState::deallocateGPUMemory()
     }
     if (d_keyCache)
     {
-        hipError_t error = hipFree(d_keyCache);
+        HIP_CHECK(hipFree(d_keyCache));
         d_keyCache = nullptr;
     }
     if (d_valueCache)
     {
-        hipError_t error = hipFree(d_valueCache);
+        HIP_CHECK(hipFree(d_valueCache));
         d_valueCache = nullptr;
     }
     if (d_scores)
