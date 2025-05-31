@@ -1,10 +1,11 @@
 #include "modelConfig.hpp"
-CModelConfig::CModelConfig() {
-
+CModelConfig::CModelConfig()
+{
 }
 
-CModelConfig::CModelConfig(int dim, int feedForwardDim, int numLayers, int numHeads, 
-    int numKvHeads, int vocabSize, int maxSeqLen) {
+CModelConfig::CModelConfig(int dim, int feedForwardDim, int numLayers, int numHeads,
+                           int numKvHeads, int vocabSize, int maxSeqLen)
+{
     this->dim = dim;
     this->feedForwardDim = feedForwardDim;
     this->numLayers = numLayers;
@@ -14,6 +15,6 @@ CModelConfig::CModelConfig(int dim, int feedForwardDim, int numLayers, int numHe
     this->maxSeqLen = maxSeqLen;
 }
 
-CModelConfig::~CModelConfig() {
-
+CModelConfig::~CModelConfig()
+{
 }

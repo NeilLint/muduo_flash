@@ -2,7 +2,7 @@
 #include "gpu_model.hpp"
 #include <cmath>
 #include <iostream>
-#include <fstream> 
+#include <fstream>
 #include <fcntl.h>
 #include <sys/mman.h>
 

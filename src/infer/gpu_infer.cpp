@@ -9,123 +9,143 @@
 #include "../util.hpp"
 #include "../backend/gpu_backend.hpp"
 
-GPU_Infer::GPU_Infer() {
+GPU_Infer::GPU_Infer()
+{
     this->mt = MODEL_LLAMA;
     this->bt = GPU;
     this->model = NULL;
     this->backend = NULL;
 
     this->maxSeqLen = 256;
-    this->temperature = 0.0;    // 0.0：贪婪解码
-    this->topp = 1.0f;          // 核采样中的top-p值
-    this->steps = 256;          // 运行的步骤数
-    this->rngSeed = 0;          // 随机数种子
+    this->temperature = 0.0; // 0.0：贪婪解码
+    this->topp = 1.0f;       // 核采样中的top-p值
+    this->steps = 256;       // 运行的步骤数
+    this->rngSeed = 0;       // 随机数种子
 }
 
-GPU_Infer::~GPU_Infer(){
-    if(this->model != NULL) {
+GPU_Infer::~GPU_Infer()
+{
+    if (this->model != NULL)
+    {
         delete this->model;
     }
 
-    if(this->backend != NULL) {
+    if (this->backend != NULL)
+    {
         delete this->backend;
     }
 }
 
-long timeInMs() {
+long timeInMs()
+{
     using namespace std::chrono;
     return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
 }
 
-void printSafeString(const std::string& piece) {
+void printSafeString(const std::string &piece)
+{
 
-    if (piece.empty()) {
+    if (piece.empty())
+    {
         return;
     }
-    if (piece.size() == 1) {
+    if (piece.size() == 1)
+    {
         unsigned char byteVal = static_cast<unsigned char>(piece[0]);
-        if (!(std::isprint(byteVal) || std::isspace(byteVal))) {
-            return; 
+        if (!(std::isprint(byteVal) || std::isspace(byteVal)))
+        {
+            return;
         }
     }
 
     std::cout << piece << std::flush;
 }
 
-void GPU_Infer::build(std::string modelPath,std::string tknzrPath, ModelType mt, BackendType bt){
-     if(mt == MODEL_LLAMA){
+void GPU_Infer::build(std::string modelPath, std::string tknzrPath, ModelType mt, BackendType bt)
+{
+    if (mt == MODEL_LLAMA)
+    {
         model = new GPU_Transformer();
         model->initializeModel(modelPath);
-     } else{
-        std::cerr<< "[ERROR:] Unsupported model type\n"<<std::endl;
+    }
+    else
+    {
+        std::cerr << "[ERROR:] Unsupported model type\n"
+                  << std::endl;
         exit(1);
     }
-    
-    
+
     this->bt = bt;
     backend = new GPU_Backend();
-    
+
     tokenizer = new CTokenizer();
     sampler = new CSampler();
-	model->backend = backend;
-    tokenizer->initializeTokenizer(tknzrPath,model->config.vocabSize);
+    model->backend = backend;
+    tokenizer->initializeTokenizer(tknzrPath, model->config.vocabSize);
     sampler->initializeSampler(model->config.vocabSize, temperature, topp, rngSeed);
 }
 
-std::tuple<std::string, int, long> GPU_Infer::generate(std::string prompt) {
+std::tuple<std::string, int, long> GPU_Infer::generate(std::string prompt)
+{
     std::string result;
     std::string emptyPrompt = "";
 
     int numPromptTokens = 0;
-    int* promptTokens = new int[prompt.size() + 3]; // BOS, EOS, 和空终止符
+    int *promptTokens = new int[prompt.size() + 3]; // BOS, EOS, 和空终止符
 
     model->encode(tokenizer, prompt, 1, 0, promptTokens, &numPromptTokens);
 
-    if (numPromptTokens < 1) {
-        std::cerr<<"[ERROR:] Something is wrong, expected at least 1 prompt token\n"<<std::endl;
+    if (numPromptTokens < 1)
+    {
+        std::cerr << "[ERROR:] Something is wrong, expected at least 1 prompt token\n"
+                  << std::endl;
         exit(EXIT_FAILURE);
     }
 
-    long start = 0;      
-    long end = 0;        
+    long start = 0;
+    long end = 0;
     long elapsed;
-    int next;                    
-    int token = promptTokens[0]; 
-    int pos = 0;               
-    float* logits = static_cast<float*>(malloc(model->config.vocabSize * sizeof(float)));
-    while (pos < steps) {
-        model->forward(token, pos, backend,logits);
+    int next;
+    int token = promptTokens[0];
+    int pos = 0;
+    while (pos < steps)
+    {
+        model->forward(token, pos, backend);
 
-        if (pos < numPromptTokens - 1) {
+        if (pos < numPromptTokens - 1)
+        {
 
             next = promptTokens[pos + 1];
-
-        } else {
-            next = sampler->sample(logits);
+        }
+        else
+        {
+            next = sampler->sample(model->state.h_logits);
         }
         pos++;
 
-        if (next == 1) { 
-            break; 
+        if (next == 1)
+        {
+            break;
         }
 
-        char* decodedToken = model->decode(tokenizer, token, next);
+        char *decodedToken = model->decode(tokenizer, token, next);
         result += decodedToken;
         printSafeString(decodedToken);
         token = next;
 
-        if (start == 0) { 
-            start = timeInMs(); 
+        if (start == 0)
+        {
+            start = timeInMs();
         }
     }
     printf("\n");
 
-    if (pos > 1) {
+    if (pos > 1)
+    {
         end = timeInMs();
         elapsed = end - start;
     }
 
     delete[] promptTokens;
-    delete[] logits;
     return std::make_tuple(result, pos - 1, elapsed);
 }

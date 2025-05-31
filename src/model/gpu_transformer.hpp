@@ -7,10 +7,11 @@
 #include <unistd.h>
 #include <string>
 
-class GPU_Transformer:public GPU_Model{
+class GPU_Transformer : public GPU_Model
+{
 public:
     GPU_Transformer();
-    ~GPU_Transformer(); 
+    ~GPU_Transformer();
 };
 
 #endif

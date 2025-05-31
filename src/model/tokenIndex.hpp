@@ -1,17 +1,17 @@
 #ifndef TOKENINDEX_HPP
 #define TOKENINDEX_HPP
 
-#include <cstring>  
+#include <cstring>
 
 class CTokenIndex
 {
 public:
-    char* token;  
-    int id;     
+    char *token;
+    int id;
 
-    CTokenIndex();  
-    CTokenIndex(const char* initToken); 
-    ~CTokenIndex();  
+    CTokenIndex();
+    CTokenIndex(const char *initToken);
+    ~CTokenIndex();
 };
 
 #endif

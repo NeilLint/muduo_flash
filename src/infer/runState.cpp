@@ -7,10 +7,12 @@ CRunState::CRunState()
       v(nullptr), attentionScores(nullptr), logits(nullptr),
       keyCache(nullptr), valueCache(nullptr) {}
 
-CRunState::~CRunState() {
+CRunState::~CRunState()
+{
 }
 
-void CRunState::allocateMemory(CModelConfig* config) {
+void CRunState::allocateMemory(CModelConfig *config)
+{
     int kvDim = (config->dim * config->numKvHeads) / config->numKvHeads;
 
     currentActivation = new float[config->dim]();
@@ -22,16 +24,18 @@ void CRunState::allocateMemory(CModelConfig* config) {
     keyCache = new float[config->numLayers * config->maxSeqLen * kvDim]();
     valueCache = new float[config->numLayers * config->maxSeqLen * kvDim]();
     attentionScores = new float[config->numHeads * config->maxSeqLen]();
-    logits = new float[config->vocabSize]();  
+    logits = new float[config->vocabSize]();
 
     if (!currentActivation || !branchActivation || !extraBuffer || !hiddenBuffer || !extraHiddenBuffer ||
-        !q || !keyCache || !valueCache || !attentionScores || !logits) {
+        !q || !keyCache || !valueCache || !attentionScores || !logits)
+    {
         std::cerr << "[ERROR:] Memory allocation failed!" << std::endl;
         exit(EXIT_FAILURE);
     }
 }
 
-void CRunState::deallocateMemory() {
+void CRunState::deallocateMemory()
+{
     delete[] currentActivation;
     delete[] branchActivation;
     delete[] extraBuffer;
@@ -39,7 +43,7 @@ void CRunState::deallocateMemory() {
     delete[] extraHiddenBuffer;
     delete[] q;
     delete[] attentionScores;
-    delete[] logits; 
+    delete[] logits;
     delete[] keyCache;
     delete[] valueCache;
 }
