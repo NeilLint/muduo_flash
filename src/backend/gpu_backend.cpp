@@ -31,7 +31,7 @@
         }                                                          \
     }
 
-// 优化的RMSNorm内核 - 使用warp-level归约
+// RMSNorm内核
 __global__ void __launch_bounds__(512) rmsnorm_kernel(
     float *__restrict__ o,
     const float *__restrict__ x,
@@ -43,7 +43,6 @@ __global__ void __launch_bounds__(512) rmsnorm_kernel(
     int warp_id = tid / 64;
     unsigned int lane_id = tid % 64;
 
-    // 使用共享内存进行warp间归约
     extern __shared__ float s_sum[];
 
     // 计算线程局部平方和
@@ -54,21 +53,18 @@ __global__ void __launch_bounds__(512) rmsnorm_kernel(
         thread_sum_sq += val * val;
     }
 
-    // Warp-level归约
 #pragma unroll
     for (int offset = 32; offset > 0; offset /= 2)
     {
         thread_sum_sq += __shfl_down(thread_sum_sq, offset);
     }
 
-    // 每个warp的第一个线程写入共享内存
     if (lane_id == 0)
     {
         s_sum[warp_id] = thread_sum_sq;
     }
     __syncthreads();
 
-    // 最后一个warp处理warp间归约
     if (warp_id == 0)
     {
         float warp_sum = (lane_id < (blockDim.x + 63) / 64) ? s_sum[lane_id] : 0.0f;
@@ -128,14 +124,6 @@ void GPU_Backend::matmul(float *o_d,
                          int d,
                          hipStream_t stream)
 {
-    // 输入参数检查
-    if (!o_d || !x_d || !w_d || n <= 0 || d <= 0)
-    {
-        fprintf(stderr, "GPU Matmul Error: Invalid input pointers or dimensions.\n");
-        return;
-    }
-
-    // 使用指定的流或默认流
     hipStream_t useStream = stream ? stream : this->stream;
     HIPBLAS_CHECK(hipblasSetStream(blas_handle, useStream));
 
@@ -145,17 +133,17 @@ void GPU_Backend::matmul(float *o_d,
     // 对于矩阵-向量乘法，使用GEMV而不是GEMM以获得更高效率
     HIPBLAS_CHECK(hipblasSgemv(
         blas_handle,
-        HIPBLAS_OP_T, // 转置矩阵，因为我们的矩阵是行主序存储
-        n,            // 原始矩阵的行数
-        d,            // 原始矩阵的列数
-        &alpha,       // 缩放因子
-        w_d,          // 矩阵
-        n,            // 矩阵的leading dimension
-        x_d,          // 输入向量
-        1,            // 输入向量的步长
-        &beta,        // 累积因子
-        o_d,          // 输出向量
-        1             // 输出向量的步长
+        HIPBLAS_OP_T, 
+        n,            
+        d,            
+        &alpha,       
+        w_d,          
+        n,            
+        x_d,          
+        1,            
+        &beta,        
+        o_d,          
+        1             
         ));
 }
 
@@ -166,18 +154,11 @@ void GPU_Backend::rmsnorm(
     int size,
     hipStream_t stream)
 {
-    if (size <= 0 || !o || !x || !weight)
-    {
-        fprintf(stderr, "RMSNorm_Optimized Error: Invalid input parameters.\n");
-        return;
-    }
-
     hipStream_t useStream = stream ? stream : this->stream;
 
     const float epsilon = 1e-5f;
     const int block_size = 256;
 
-    // 使用单个块处理，共享内存大小为warp数量
     dim3 gridDim(1);
     dim3 blockDim(block_size);
     size_t shared_mem_size = ((block_size + 63) / 64) * sizeof(float);
@@ -240,7 +221,7 @@ void GPU_Backend::ropeEncoding(float *q, float *k,
         dim3(blocks),
         dim3(threads),
         0,
-        useStream, // 使用指定的流
+        useStream, 
         q, k, headSize, position, dim, kvDim);
     HIP_CHECK(hipGetLastError());
 }
@@ -260,25 +241,22 @@ void GPU_Backend::swiGLLUFunc(float *hb, float *hb2, int hiddenDim, hipStream_t 
 {
     hipStream_t useStream = stream ? stream : this->stream;
 
-    // 1. 计算网格与线程数
     const int threads = 256;
     const int blocks = (hiddenDim + threads - 1) / threads;
-
-    // 2. 启动 kernel，使用指定的流
     hipLaunchKernelGGL(
         swiGLLU_kernel,
-        dim3(blocks),  // grid
-        dim3(threads), // block
-        0,             // shared mem
-        useStream,     // 使用指定的流
-        hb,            // kernel args...
+        dim3(blocks),  
+        dim3(threads), 
+        0,             
+        useStream,     
+        hb,            
         hb2,
         hiddenDim);
     HIP_CHECK(hipGetLastError());
 }
 
-// 优化的QK计算和Softmax内核 - 添加warp-level优化
-__global__ void __launch_bounds__(512) optimized_flash_qk_kernel(
+// QK计算和Softmax内核
+__global__ void __launch_bounds__(512) flash_qk_kernel(
     const float *__restrict__ q,
     const float *__restrict__ k_cache,
     float *__restrict__ scores,
@@ -410,8 +388,8 @@ __global__ void __launch_bounds__(512) optimized_flash_qk_kernel(
     }
 }
 
-// 优化的输出计算内核 - 添加向量化访问
-__global__ void optimized_flash_output_kernel(
+// 输出计算内核
+__global__ void flash_output_kernel(
     const float *__restrict__ attn,
     const float *__restrict__ v_cache,
     float *__restrict__ output,
@@ -479,34 +457,28 @@ void GPU_Backend::flash_attention(
     dim3 block_output(HEAD_SIZE);
     size_t shmem_size_output = ((HEAD_SIZE + 63) / 64) * sizeof(float);
 
-    optimized_flash_qk_kernel<<<grid_qk, block_qk, shmem_size_qk, useStream>>>(
+    flash_qk_kernel<<<grid_qk, block_qk, shmem_size_qk, useStream>>>(
         q, k_cache, scores, attn, seq_len, HEAD_SIZE, NUM_HEADS);
 
     HIP_CHECK(hipGetLastError());
 
-    optimized_flash_output_kernel<<<grid_output, block_output, shmem_size_output, useStream>>>(
+    flash_output_kernel<<<grid_output, block_output, shmem_size_output, useStream>>>(
         attn, v_cache, output, seq_len, HEAD_SIZE, NUM_HEADS);
 
     HIP_CHECK(hipGetLastError());
 }
 
-// 融合的matmul_axpy函数实现
+// matmul_axpy函数实现
 void GPU_Backend::matmul_axpy(
-    float *out,        // 输出向量，同时是axpy的目标
-    const float *x,    // 输入向量
-    const float *w,    // 权重矩阵
-    float factor,      // axpy的缩放因子
-    int n,             // 输入维度
-    int d,             // 输出维度
-    hipStream_t stream // 可选的CUDA流
+    float *out,        
+    const float *x,    
+    const float *w,    
+    float factor,      
+    int n,             
+    int d,             
+    hipStream_t stream 
 )
 {
-    if (!out || !x || !w || d <= 0 || n <= 0)
-    {
-        fprintf(stderr, "GPU matmul_axpy Error: Invalid input pointers or dimensions.\n");
-        return;
-    }
-
     hipStream_t useStream = stream ? stream : this->stream;
     HIPBLAS_CHECK(hipblasSetStream(blas_handle, useStream));
 
@@ -556,12 +528,6 @@ void GPU_Backend::extract_qkv(
     int dim,
     hipStream_t stream)
 {
-    if (!qkv_result || !q || !k || !v || dim <= 0)
-    {
-        fprintf(stderr, "GPU extract_qkv Error: Invalid input pointers or dimensions.\n");
-        return;
-    }
-
     hipStream_t useStream = stream ? stream : this->stream;
 
     const int threads = 256;
