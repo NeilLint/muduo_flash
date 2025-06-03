@@ -32,7 +32,7 @@ public:
     // 融合的QKV分离：直接从QKV结果中提取Q、K、V，避免内存拷贝
     void extract_qkv(const float *qkv_result, float *q, float *k, float *v, int dim, hipStream_t stream = nullptr);
 
-    // 优化的RMSNorm：使用更好的内存访问模式和warp-level归约
+    // RMSNorm
     void rmsnorm(float *o, const float *x, const float *weight, int size, hipStream_t stream = nullptr);
 };
 
