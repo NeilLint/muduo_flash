@@ -10,6 +10,7 @@ std::string tknzrPath;
 
 ModelType mt;
 BackendType bt;
+std::string attentionKernel;
 std::vector<std::string> prompts;
 
 void parse(int argc, char *argv[])
@@ -18,7 +19,7 @@ void parse(int argc, char *argv[])
     if (argc <= 1 || argv[1] == nullptr || std::string(argv[1]).empty() ||
         argc <= 2 || argv[2] == nullptr || std::string(argv[2]).empty())
     {
-        std::cout << "Usage: muduo [model_path] [tokenizer_path] [prompt] [modelType] [backend]" << std::endl;
+        std::cout << "Usage: muduo [model_path] [tokenizer_path] [prompt] [modelType] [attentionKernel: flash|classic]" << std::endl;
         exit(1);
     }
     modelPath = argv[1];
@@ -66,21 +67,7 @@ void parse(int argc, char *argv[])
 
     if (argc > 5 && argv[5] != nullptr && std::string(argv[5]) != "")
     {
-        std::string backendStr = argv[5];
-        if (backendStr == "cpu")
-        {
-            bt = BackendType::CPU;
-        }
-        else if (backendStr == "gpu")
-        {
-            bt = BackendType::GPU;
-            std::cout << "[MSG:] Selected GPU backend" << std::endl;
-        }
-        else
-        {
-            std::cerr << "[ERROR:] Unsupported backend: " << backendStr << std::endl;
-            exit(1);
-        }
+        attentionKernel = argv[5];
     }
 }
 
@@ -89,7 +76,8 @@ void init()
     modelPath = "";
     tknzrPath = "";
     mt = ModelType::MODEL_LLAMA;
-    bt = BackendType::CPU;
+    bt = BackendType::GPU;
+    attentionKernel = "flash";
 }
 
 std::vector<std::string> loadResponses(const std::string &filename)
@@ -132,9 +120,9 @@ int main(int argc, char *argv[])
 
     init();
     parse(argc, argv);
-    bt = BackendType::GPU;
     GPU_Infer infer;
     infer.build(modelPath, tknzrPath, mt, bt);
+    infer.setAttentionKernel(attentionKernel);
     int totalTokens = 0;
     long totalTimeMs = 0;
 

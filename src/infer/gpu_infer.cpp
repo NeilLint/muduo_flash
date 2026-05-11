@@ -13,8 +13,10 @@ GPU_Infer::GPU_Infer()
 {
     this->mt = MODEL_LLAMA;
     this->bt = GPU;
-    this->model = NULL;
-    this->backend = NULL;
+    this->model = nullptr;
+    this->backend = nullptr;
+    this->tokenizer = nullptr;
+    this->sampler = nullptr;
 
     this->maxSeqLen = 256;
     this->temperature = 0.0; // 0.0：贪婪解码
@@ -25,14 +27,24 @@ GPU_Infer::GPU_Infer()
 
 GPU_Infer::~GPU_Infer()
 {
-    if (this->model != NULL)
+    if (this->model != nullptr)
     {
         delete this->model;
     }
 
-    if (this->backend != NULL)
+    if (this->backend != nullptr)
     {
         delete this->backend;
+    }
+
+    if (this->tokenizer != nullptr)
+    {
+        delete this->tokenizer;
+    }
+
+    if (this->sampler != nullptr)
+    {
+        delete this->sampler;
     }
 }
 
@@ -83,13 +95,37 @@ void GPU_Infer::build(std::string modelPath, std::string tknzrPath, ModelType mt
     model->backend = backend;
     tokenizer->initializeTokenizer(tknzrPath, model->config.vocabSize);
     sampler->initializeSampler(model->config.vocabSize, temperature, topp, rngSeed);
+
+    model->config.attentionPattern = (model->config.numKvHeads == model->config.numHeads)
+                                        ? CModelConfig::AttentionPattern::MHA
+                                        : CModelConfig::AttentionPattern::GQA;
+}
+
+void GPU_Infer::setAttentionKernel(const std::string &kernelName)
+{
+    if (model == nullptr)
+    {
+        std::cerr << "[ERROR:] setAttentionKernel must be called after build()" << std::endl;
+        exit(1);
+    }
+    if (kernelName == "flash")
+    {
+        model->config.attentionKernel = CModelConfig::AttentionKernel::FLASH;
+    }
+    else if (kernelName == "classic")
+    {
+        model->config.attentionKernel = CModelConfig::AttentionKernel::CLASSIC;
+    }
+    else
+    {
+        std::cerr << "[ERROR:] Unsupported attention kernel: " << kernelName << std::endl;
+        exit(1);
+    }
 }
 
 std::tuple<std::string, int, long> GPU_Infer::generate(std::string prompt)
 {
     std::string result;
-    std::string emptyPrompt = "";
-
     int numPromptTokens = 0;
     int *promptTokens = new int[prompt.size() + 3]; // BOS, EOS, 和空终止符
 

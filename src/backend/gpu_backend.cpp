@@ -2,34 +2,12 @@
 #include <hip/hip_runtime.h>
 #include <hip/hip_fp16.h>
 #include <hipblas.h>
+#include "../hip_utils.hpp"
 #include <cmath>
 #include <cfloat>
 #include <stdlib.h>
 #include <math.h>
 #include <float.h>
-
-// 用于HIP错误检查的辅助宏
-#define HIP_CHECK(command)                                                  \
-    {                                                                       \
-        hipError_t status = command;                                        \
-        if (status != hipSuccess)                                           \
-        {                                                                   \
-            fprintf(stderr, "HIP Error: %s (%d) at %s:%d\n",                \
-                    hipGetErrorString(status), status, __FILE__, __LINE__); \
-            exit(EXIT_FAILURE);                                             \
-        }                                                                   \
-    }
-
-#define HIPBLAS_CHECK(command)                                     \
-    {                                                              \
-        hipblasStatus_t status = command;                          \
-        if (status != HIPBLAS_STATUS_SUCCESS)                      \
-        {                                                          \
-            fprintf(stderr, "hipBLAS Error: Status %d at %s:%d\n", \
-                    status, __FILE__, __LINE__);                   \
-            exit(EXIT_FAILURE);                                    \
-        }                                                          \
-    }
 
 // RMSNorm内核
 __global__ void __launch_bounds__(512) rmsnorm_kernel(
@@ -114,6 +92,12 @@ GPU_Backend::~GPU_Backend()
     {
         HIPBLAS_CHECK(hipblasDestroy(blas_handle));
         blas_handle = nullptr;
+    }
+
+    if (stream)
+    {
+        HIP_CHECK(hipStreamDestroy(stream));
+        stream = nullptr;
     }
 }
 
@@ -263,7 +247,8 @@ __global__ void __launch_bounds__(512) flash_qk_kernel(
     float *__restrict__ attn,
     int seq_len,
     int head_size,
-    int num_heads)
+    int num_heads,
+    int num_kv_heads)
 {
     int head_idx = blockIdx.x;
     int tid = threadIdx.x;
@@ -277,6 +262,8 @@ __global__ void __launch_bounds__(512) flash_qk_kernel(
     if (head_idx >= num_heads)
         return;
 
+    const int kv_group_size = num_heads / num_kv_heads;
+    const int kv_head_idx = head_idx / kv_group_size;
     const float *q_head = q + head_idx * head_size;
     float scale = 1.0f / sqrtf((float)head_size);
     float thread_max = -FLT_MAX;
@@ -284,7 +271,7 @@ __global__ void __launch_bounds__(512) flash_qk_kernel(
     for (int i = tid; i < seq_len; i += blockDim.x)
     {
         float score = 0.0f;
-        const float *k_vec = k_cache + i * num_heads * head_size + head_idx * head_size;
+        const float *k_vec = k_cache + i * num_kv_heads * head_size + kv_head_idx * head_size;
 
         int d = 0;
         for (; d + 7 < head_size; d += 8)
@@ -395,7 +382,8 @@ __global__ void flash_output_kernel(
     float *__restrict__ output,
     int seq_len,
     int head_size,
-    int num_heads)
+    int num_heads,
+    int num_kv_heads)
 {
     int head_idx = blockIdx.x;
     int feat_idx = threadIdx.x;
@@ -404,8 +392,10 @@ __global__ void flash_output_kernel(
         return;
 
     float acc = 0.0f;
+    const int kv_group_size = num_heads / num_kv_heads;
+    const int kv_head_idx = head_idx / kv_group_size;
     const float *attn_head = attn + head_idx * seq_len;
-    const float *v_base = v_cache + head_idx * head_size + feat_idx;
+    const float *v_base = v_cache + kv_head_idx * head_size + feat_idx;
 
     int i = 0;
     for (; i + 3 < seq_len; i += 4)
@@ -415,10 +405,10 @@ __global__ void flash_output_kernel(
         float a2 = attn_head[i + 2];
         float a3 = attn_head[i + 3];
 
-        float v0 = v_base[i * num_heads * head_size];
-        float v1 = v_base[(i + 1) * num_heads * head_size];
-        float v2 = v_base[(i + 2) * num_heads * head_size];
-        float v3 = v_base[(i + 3) * num_heads * head_size];
+        float v0 = v_base[i * num_kv_heads * head_size];
+        float v1 = v_base[(i + 1) * num_kv_heads * head_size];
+        float v2 = v_base[(i + 2) * num_kv_heads * head_size];
+        float v3 = v_base[(i + 3) * num_kv_heads * head_size];
 
         acc += a0 * v0 + a1 * v1 + a2 * v2 + a3 * v3;
     }
@@ -426,13 +416,125 @@ __global__ void flash_output_kernel(
     for (; i < seq_len; i++)
     {
         float a = attn_head[i];
-        float v = v_base[i * num_heads * head_size];
+        float v = v_base[i * num_kv_heads * head_size];
         acc += a * v;
     }
 
     output[head_idx * head_size + feat_idx] = acc;
 }
 
+
+
+__global__ void flash_attention_online_kernel(
+    const float *__restrict__ q,
+    const float *__restrict__ k_cache,
+    const float *__restrict__ v_cache,
+    float *__restrict__ out,
+    int seq_len,
+    int head_size,
+    int num_heads,
+    int num_kv_heads)
+{
+    constexpr int TILE_N = 64;
+    int h = blockIdx.x;
+    int tid = threadIdx.x;
+    if (h >= num_heads)
+        return;
+
+    extern __shared__ float smem[];
+    float *red = smem; // blockDim.x
+    float *tile_scores = smem + blockDim.x; // TILE_N
+
+    const int kv_group_size = num_heads / num_kv_heads;
+    const int kv_head = h / kv_group_size;
+
+    float m = -INFINITY;
+    float l = 0.0f;
+    float acc = 0.0f; // each thread accumulates one dim lane
+    const float scale = rsqrtf((float)head_size);
+
+    for (int tile_start = 0; tile_start < seq_len; tile_start += TILE_N)
+    {
+        const int tile_len = min(TILE_N, seq_len - tile_start);
+        float tile_m = -INFINITY;
+
+        // pass1: compute tile scores and tile max
+        for (int j = 0; j < tile_len; ++j)
+        {
+            int t = tile_start + j;
+            float partial = 0.0f;
+            if (tid < head_size)
+            {
+                partial = q[h * head_size + tid] * k_cache[t * num_kv_heads * head_size + kv_head * head_size + tid];
+            }
+
+            red[tid] = partial;
+            __syncthreads();
+            for (int stride = blockDim.x / 2; stride > 0; stride >>= 1)
+            {
+                if (tid < stride)
+                    red[tid] += red[tid + stride];
+                __syncthreads();
+            }
+
+            if (tid == 0)
+            {
+                float s = red[0] * scale;
+                tile_scores[j] = s;
+                tile_m = fmaxf(tile_m, s);
+            }
+            __syncthreads();
+        }
+
+        if (tid == 0)
+        {
+            red[0] = tile_m;
+        }
+        __syncthreads();
+        tile_m = red[0];
+
+        float m_new = fmaxf(m, tile_m);
+        float alpha = expf(m - m_new);
+
+        // pass2: sum exp and update accumulator
+        float tile_l = 0.0f;
+        for (int j = tid; j < tile_len; j += blockDim.x)
+        {
+            tile_l += expf(tile_scores[j] - m_new);
+        }
+        red[tid] = tile_l;
+        __syncthreads();
+        for (int stride = blockDim.x / 2; stride > 0; stride >>= 1)
+        {
+            if (tid < stride)
+                red[tid] += red[tid + stride];
+            __syncthreads();
+        }
+        float l_new = alpha * l + red[0];
+
+        if (tid < head_size)
+        {
+            float weighted = 0.0f;
+            for (int j = 0; j < tile_len; ++j)
+            {
+                int t = tile_start + j;
+                float p = expf(tile_scores[j] - m_new);
+                weighted += p * v_cache[t * num_kv_heads * head_size + kv_head * head_size + tid];
+            }
+            float prev = acc;
+            acc = (alpha * l * prev + weighted) / (l_new + 1e-12f);
+        }
+
+        m = m_new;
+        l = l_new;
+        __syncthreads();
+    }
+
+    if (tid < head_size)
+    {
+        out[h * head_size + tid] = acc;
+    }
+}
 void GPU_Backend::flash_attention(
     float *q,
     float *k_cache,
@@ -441,30 +543,57 @@ void GPU_Backend::flash_attention(
     float *scores,
     float *attn,
     int seq_len,
+    int num_heads,
+    int num_kv_heads,
+    int head_size,
     hipStream_t stream)
 {
     hipStream_t useStream = stream ? stream : this->stream;
+    const int launch_threads = ((head_size + 63) / 64) * 64;
+    if (launch_threads > 1024)
+    {
+        // 超出单个block线程上限时回退到classic路径
+        classic_attention(q, k_cache, v_cache, output, scores, attn, seq_len, num_heads, num_kv_heads, head_size, useStream);
+        return;
+    }
 
-    const int BLOCK_SIZE = 256;
-    const int HEAD_SIZE = GPU_Backend::HEAD_SIZE;
-    const int NUM_HEADS = GPU_Backend::NUM_HEADS;
+    // 标准FlashAttention核心思想：在线softmax + 不落地完整attention矩阵
+    // 每个block处理一个query head，通过m/l在线归一化累计输出
+    size_t shmem = (launch_threads + 64) * sizeof(float);
+    hipLaunchKernelGGL(flash_attention_online_kernel, dim3(num_heads), dim3(launch_threads), shmem, useStream,
+                       q, k_cache, v_cache, output, seq_len, head_size, num_heads, num_kv_heads);
+    HIP_CHECK(hipGetLastError());
+}
 
-    dim3 grid_qk(NUM_HEADS);
-    dim3 block_qk(BLOCK_SIZE);
-    size_t shmem_size_qk = 2 * BLOCK_SIZE * sizeof(float);
+void GPU_Backend::classic_attention(
+    float *q,
+    float *k_cache,
+    float *v_cache,
+    float *output,
+    float *scores,
+    float *attn,
+    int seq_len,
+    int num_heads,
+    int num_kv_heads,
+    int head_size,
+    hipStream_t stream)
+{
+    hipStream_t useStream = stream ? stream : this->stream;
+    const int block_size = 256;
 
-    dim3 grid_output(NUM_HEADS);
-    dim3 block_output(HEAD_SIZE);
-    size_t shmem_size_output = ((HEAD_SIZE + 63) / 64) * sizeof(float);
+    dim3 grid_qk(num_heads);
+    dim3 block_qk(block_size);
+    size_t shmem_size_qk = 2 * block_size * sizeof(float);
+
+    dim3 grid_output(num_heads);
+    dim3 block_output(head_size);
 
     flash_qk_kernel<<<grid_qk, block_qk, shmem_size_qk, useStream>>>(
-        q, k_cache, scores, attn, seq_len, HEAD_SIZE, NUM_HEADS);
-
+        q, k_cache, scores, attn, seq_len, head_size, num_heads, num_kv_heads);
     HIP_CHECK(hipGetLastError());
 
-    flash_output_kernel<<<grid_output, block_output, shmem_size_output, useStream>>>(
-        attn, v_cache, output, seq_len, HEAD_SIZE, NUM_HEADS);
-
+    flash_output_kernel<<<grid_output, block_output, 0, useStream>>>(
+        attn, v_cache, output, seq_len, head_size, num_heads, num_kv_heads);
     HIP_CHECK(hipGetLastError());
 }
 
@@ -543,3 +672,5 @@ void GPU_Backend::extract_qkv(
 
     HIP_CHECK(hipGetLastError());
 }
+    const int kv_group_size = num_heads / num_kv_heads;
+    const int kv_head_idx = head_idx / kv_group_size;

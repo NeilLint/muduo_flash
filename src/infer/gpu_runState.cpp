@@ -23,7 +23,7 @@ void GPU_RunState::allocateGPUMemory(CModelConfig *config)
         h_logits = static_cast<float *>(malloc(config->vocabSize * sizeof(float)));
     }
     
-    int kvDim = (config->dim * config->numKvHeads) / config->numKvHeads;
+    int kvDim = config->kvDim();
     // 分配设备内存
     HIP_CHECK(hipMalloc((void **)&d_currentActivation, config->dim * sizeof(float)));
     HIP_CHECK(hipMalloc((void **)&d_branchActivation, config->dim * sizeof(float)));
@@ -152,7 +152,7 @@ void GPU_RunState::copyToGPU(CRunState *cpuState, CModelConfig *config)
         return;
     }
 
-    int kvDim = (config->dim * config->numKvHeads) / config->numKvHeads;
+    int kvDim = config->kvDim();
 
     // 将CPU内存数据复制到GPU
     if (cpuState->currentActivation && d_currentActivation)
@@ -224,7 +224,7 @@ void GPU_RunState::copyFromGPU(CRunState *cpuState, CModelConfig *config)
         return;
     }
 
-    int kvDim = (config->dim * config->numKvHeads) / config->numKvHeads;
+    int kvDim = config->kvDim();
 
     // 将GPU数据复制回CPU内存
     if (cpuState->currentActivation && d_currentActivation)

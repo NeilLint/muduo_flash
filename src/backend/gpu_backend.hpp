@@ -25,7 +25,10 @@ public:
 
     void ropeEncoding(float *q, float *k, int headSize, int position, int dim, int kvDim, hipStream_t stream = nullptr);
     void swiGLLUFunc(float *hb, float *hb2, int hiddenDim, hipStream_t stream = nullptr);
-    void flash_attention(float *q, float *k_cache, float *v_cache, float *output, float *scores, float *attn, int seq_len, hipStream_t stream = nullptr);
+    void flash_attention(float *q, float *k_cache, float *v_cache, float *output, float *scores, float *attn,
+                         int seq_len, int num_heads, int num_kv_heads, int head_size, hipStream_t stream = nullptr);
+    void classic_attention(float *q, float *k_cache, float *v_cache, float *output, float *scores, float *attn,
+                           int seq_len, int num_heads, int num_kv_heads, int head_size, hipStream_t stream = nullptr);
     // 融合算子：执行矩阵乘法后立即执行axpy操作
     void matmul_axpy(float *out, const float *x, const float *w, float factor, int n, int d, hipStream_t stream = nullptr);
 
