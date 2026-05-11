@@ -7,6 +7,7 @@
 #include <cmath>
 #include <iostream>
 #include <fstream>
+#include <stdexcept>
 #include <fcntl.h>
 #include <sys/mman.h>
 
@@ -14,18 +15,15 @@ static void validateAttentionConfig(const CModelConfig &cfg)
 {
     if (cfg.numHeads <= 0 || cfg.numKvHeads <= 0)
     {
-        std::cerr << "[ERROR:] Invalid attention head config: numHeads and numKvHeads must be positive." << std::endl;
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("invalid attention head config: numHeads and numKvHeads must be positive");
     }
     if (cfg.dim <= 0 || cfg.dim % cfg.numHeads != 0)
     {
-        std::cerr << "[ERROR:] Invalid model dim/head config: dim must be positive and divisible by numHeads." << std::endl;
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("invalid model dim/head config: dim must be positive and divisible by numHeads");
     }
     if (cfg.numHeads % cfg.numKvHeads != 0)
     {
-        std::cerr << "[ERROR:] Invalid GQA config: numHeads must be divisible by numKvHeads." << std::endl;
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("invalid GQA config: numHeads must be divisible by numKvHeads");
     }
 }
 
@@ -77,15 +75,11 @@ void GPU_Model::encode(CTokenizer *tokenizer, std::string text, int8_t bos, int8
 {
     if (text.empty())
     {
-        std::cerr << "[ERROR:] Text input is empty and cannot be processed.\n"
-                  << std::endl;
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("text input is empty and cannot be processed");
     }
     if (tokenizer == nullptr || tokens == nullptr || numTokens == nullptr)
     {
-        std::cerr << "[ERROR:] Invalid input arguments detected. Ensure tokenizer, tokens, and numTokens are properly initialized.\n"
-                  << std::endl;
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("invalid input arguments for encode");
     }
     if (tokenizer->vocabSortedList == nullptr)
     {

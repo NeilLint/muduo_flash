@@ -8,6 +8,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include <float.h>
+#include <vector>
+#include <stdexcept>
+#include <limits>
 
 // RMSNorm内核
 __global__ void __launch_bounds__(512) rmsnorm_kernel(
@@ -578,23 +581,58 @@ void GPU_Backend::classic_attention(
     int head_size,
     hipStream_t stream)
 {
-    hipStream_t useStream = stream ? stream : this->stream;
-    const int block_size = 256;
+    // 参考路径：在主机端执行显式SDPA，作为可信基线（正确性优先）
+    const size_t q_size = static_cast<size_t>(num_heads) * head_size;
+    const size_t kv_size = static_cast<size_t>(seq_len) * num_kv_heads * head_size;
+    std::vector<float> h_q(q_size), h_k(kv_size), h_v(kv_size), h_out(q_size);
 
-    dim3 grid_qk(num_heads);
-    dim3 block_qk(block_size);
-    size_t shmem_size_qk = 2 * block_size * sizeof(float);
+    HIP_CHECK(hipMemcpy(h_q.data(), q, q_size * sizeof(float), hipMemcpyDeviceToHost));
+    HIP_CHECK(hipMemcpy(h_k.data(), k_cache, kv_size * sizeof(float), hipMemcpyDeviceToHost));
+    HIP_CHECK(hipMemcpy(h_v.data(), v_cache, kv_size * sizeof(float), hipMemcpyDeviceToHost));
 
-    dim3 grid_output(num_heads);
-    dim3 block_output(head_size);
+    const float scale = 1.0f / std::sqrt(static_cast<float>(head_size));
+    const int kv_group_size = num_heads / num_kv_heads;
+    std::vector<float> logits(seq_len);
 
-    flash_qk_kernel<<<grid_qk, block_qk, shmem_size_qk, useStream>>>(
-        q, k_cache, scores, attn, seq_len, head_size, num_heads, num_kv_heads);
-    HIP_CHECK(hipGetLastError());
+    for (int h = 0; h < num_heads; ++h)
+    {
+        const int kv_h = h / kv_group_size;
+        float max_logit = -std::numeric_limits<float>::infinity();
+        for (int t = 0; t < seq_len; ++t)
+        {
+            float dot = 0.0f;
+            for (int d = 0; d < head_size; ++d)
+            {
+                dot += h_q[h * head_size + d] * h_k[t * num_kv_heads * head_size + kv_h * head_size + d];
+            }
+            logits[t] = dot * scale;
+            max_logit = std::max(max_logit, logits[t]);
+        }
 
-    flash_output_kernel<<<grid_output, block_output, 0, useStream>>>(
-        attn, v_cache, output, seq_len, head_size, num_heads, num_kv_heads);
-    HIP_CHECK(hipGetLastError());
+        float denom = 0.0f;
+        for (int t = 0; t < seq_len; ++t)
+        {
+            logits[t] = std::exp(logits[t] - max_logit);
+            denom += logits[t];
+        }
+        if (denom <= 0.0f)
+        {
+            throw std::runtime_error("classic_attention reference path encountered invalid softmax denominator");
+        }
+
+        for (int d = 0; d < head_size; ++d)
+        {
+            float acc = 0.0f;
+            for (int t = 0; t < seq_len; ++t)
+            {
+                const float p = logits[t] / denom;
+                acc += p * h_v[t * num_kv_heads * head_size + kv_h * head_size + d];
+            }
+            h_out[h * head_size + d] = acc;
+        }
+    }
+
+    HIP_CHECK(hipMemcpy(output, h_out.data(), q_size * sizeof(float), hipMemcpyHostToDevice));
 }
 
 // matmul_axpy函数实现

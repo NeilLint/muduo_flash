@@ -3,6 +3,7 @@
 #include <iostream>
 #include <chrono>
 #include <tuple>
+#include <stdexcept>
 
 #include "gpu_infer.hpp"
 #include "../model/gpu_transformer.hpp"
@@ -82,9 +83,7 @@ void GPU_Infer::build(std::string modelPath, std::string tknzrPath, ModelType mt
     }
     else
     {
-        std::cerr << "[ERROR:] Unsupported model type\n"
-                  << std::endl;
-        exit(1);
+        throw std::runtime_error("unsupported model type");
     }
 
     this->bt = bt;
@@ -105,8 +104,7 @@ void GPU_Infer::setAttentionKernel(const std::string &kernelName)
 {
     if (model == nullptr)
     {
-        std::cerr << "[ERROR:] setAttentionKernel must be called after build()" << std::endl;
-        exit(1);
+        throw std::runtime_error("setAttentionKernel must be called after build()");
     }
     if (kernelName == "flash")
     {
@@ -118,8 +116,7 @@ void GPU_Infer::setAttentionKernel(const std::string &kernelName)
     }
     else
     {
-        std::cerr << "[ERROR:] Unsupported attention kernel: " << kernelName << std::endl;
-        exit(1);
+        throw std::runtime_error("unsupported attention kernel: " + kernelName);
     }
 }
 
@@ -133,9 +130,7 @@ std::tuple<std::string, int, long> GPU_Infer::generate(std::string prompt)
 
     if (numPromptTokens < 1)
     {
-        std::cerr << "[ERROR:] Something is wrong, expected at least 1 prompt token\n"
-                  << std::endl;
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("expected at least 1 prompt token");
     }
 
     long start = 0;
