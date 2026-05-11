@@ -5,11 +5,14 @@
 #include "../backend/gpu_backend.hpp"
 
 #include <cmath>
+#include <cstddef>
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
 #include <fcntl.h>
 #include <sys/mman.h>
+
+static constexpr size_t CHECKPOINT_CONFIG_INTS = 7;
 
 static void validateAttentionConfig(const CModelConfig &cfg)
 {
@@ -251,11 +254,24 @@ void GPU_Model::load(const std::string &checkpointPath, CModelConfig *modelConfi
     *totalFileSize = fileStream.tellg();
     fileStream.seekg(0, std::ios::beg);
 
-    fileStream.read(reinterpret_cast<char *>(modelConfig), sizeof(CModelConfig));
+    int checkpointConfig[CHECKPOINT_CONFIG_INTS];
+    fileStream.read(reinterpret_cast<char *>(checkpointConfig), sizeof(checkpointConfig));
     if (!fileStream)
     {
         std::cerr << "[ERROR:] Unable to read model config" << std::endl;
     }
+
+    modelConfig->dim = checkpointConfig[0];
+    modelConfig->feedForwardDim = checkpointConfig[1];
+    modelConfig->numLayers = checkpointConfig[2];
+    modelConfig->numHeads = checkpointConfig[3];
+    modelConfig->numKvHeads = checkpointConfig[4];
+    modelConfig->vocabSize = checkpointConfig[5];
+    modelConfig->maxSeqLen = checkpointConfig[6];
+    modelConfig->attentionPattern = (modelConfig->numKvHeads == modelConfig->numHeads)
+                                        ? CModelConfig::AttentionPattern::MHA
+                                        : CModelConfig::AttentionPattern::GQA;
+    modelConfig->attentionKernel = CModelConfig::AttentionKernel::FLASH;
 
     bool sharedWeights = modelConfig->vocabSize > 0;
     modelConfig->vocabSize = std::abs(modelConfig->vocabSize);
@@ -274,8 +290,7 @@ void GPU_Model::load(const std::string &checkpointPath, CModelConfig *modelConfi
         std::cerr << "[ERROR:] Unable to memory-map the file: " << checkpointPath << std::endl;
     }
 
-    constexpr uint64_t configSizeInFloats = sizeof(CModelConfig) / sizeof(float);
-    float *weightsPtr = *data + configSizeInFloats;
+    float *weightsPtr = *data + CHECKPOINT_CONFIG_INTS;
 
     mapWeightsToMemory(modelConfig, weightsPtr, sharedWeights);
 }

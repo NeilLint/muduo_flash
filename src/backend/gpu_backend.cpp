@@ -428,6 +428,8 @@ __global__ void flash_output_kernel(
 
 
 
+static constexpr int FLASH_TILE_N = 256;
+
 __global__ void flash_attention_online_kernel(
     const float *__restrict__ q,
     const float *__restrict__ k_cache,
@@ -438,104 +440,175 @@ __global__ void flash_attention_online_kernel(
     int num_heads,
     int num_kv_heads)
 {
-    constexpr int TILE_N = 64;
-    int h = blockIdx.x;
-    int tid = threadIdx.x;
+    constexpr int WAVE_SIZE = 64;
+    const int h = blockIdx.x;
+    const int tid = threadIdx.x;
+    const int lane = tid & (WAVE_SIZE - 1);
+    const int wave_id = tid / WAVE_SIZE;
+    const int waves_per_block = blockDim.x / WAVE_SIZE;
     if (h >= num_heads)
         return;
 
     extern __shared__ float smem[];
-    float *red = smem; // blockDim.x
-    float *tile_scores = smem + blockDim.x; // TILE_N
+    float *scores = smem;
+    float *scratch = scores + seq_len;
 
     const int kv_group_size = num_heads / num_kv_heads;
     const int kv_head = h / kv_group_size;
-
-    float m = -INFINITY;
-    float l = 0.0f;
-    float acc = 0.0f; // each thread accumulates one dim lane
+    const float *q_head = q + h * head_size;
     const float scale = rsqrtf((float)head_size);
 
-    for (int tile_start = 0; tile_start < seq_len; tile_start += TILE_N)
+    float m = -FLT_MAX;
+    float l = 0.0f;
+    float acc = 0.0f;
+
+    for (int tile_start = 0; tile_start < seq_len; tile_start += FLASH_TILE_N)
     {
-        const int tile_len = min(TILE_N, seq_len - tile_start);
-        float tile_m = -INFINITY;
+        const int remaining = seq_len - tile_start;
+        const int tile_len = remaining < FLASH_TILE_N ? remaining : FLASH_TILE_N;
 
-        // pass1: compute tile scores and tile max
-        for (int j = 0; j < tile_len; ++j)
-        {
-            int t = tile_start + j;
-            float partial = 0.0f;
-            if (tid < head_size)
-            {
-                partial = q[h * head_size + tid] * k_cache[t * num_kv_heads * head_size + kv_head * head_size + tid];
-            }
-
-            red[tid] = partial;
-            __syncthreads();
-            for (int stride = blockDim.x / 2; stride > 0; stride >>= 1)
-            {
-                if (tid < stride)
-                    red[tid] += red[tid + stride];
-                __syncthreads();
-            }
-
-            if (tid == 0)
-            {
-                float s = red[0] * scale;
-                tile_scores[j] = s;
-                tile_m = fmaxf(tile_m, s);
-            }
-            __syncthreads();
-        }
-
-        if (tid == 0)
-        {
-            red[0] = tile_m;
-        }
-        __syncthreads();
-        tile_m = red[0];
-
-        float m_new = fmaxf(m, tile_m);
-        float alpha = expf(m - m_new);
-
-        // pass2: sum exp and update accumulator
-        float tile_l = 0.0f;
+        float thread_max = -FLT_MAX;
         for (int j = tid; j < tile_len; j += blockDim.x)
         {
-            tile_l += expf(tile_scores[j] - m_new);
-        }
-        red[tid] = tile_l;
-        __syncthreads();
-        for (int stride = blockDim.x / 2; stride > 0; stride >>= 1)
-        {
-            if (tid < stride)
-                red[tid] += red[tid + stride];
-            __syncthreads();
-        }
-        float l_new = alpha * l + red[0];
-
-        if (tid < head_size)
-        {
-            float weighted = 0.0f;
-            for (int j = 0; j < tile_len; ++j)
+            const int t = tile_start + j;
+            const float *k_vec = k_cache + t * num_kv_heads * head_size + kv_head * head_size;
+            float score = 0.0f;
+            int d = 0;
+            for (; d + 7 < head_size; d += 8)
             {
-                int t = tile_start + j;
-                float p = expf(tile_scores[j] - m_new);
-                weighted += p * v_cache[t * num_kv_heads * head_size + kv_head * head_size + tid];
+                score += q_head[d] * k_vec[d] +
+                         q_head[d + 1] * k_vec[d + 1] +
+                         q_head[d + 2] * k_vec[d + 2] +
+                         q_head[d + 3] * k_vec[d + 3] +
+                         q_head[d + 4] * k_vec[d + 4] +
+                         q_head[d + 5] * k_vec[d + 5] +
+                         q_head[d + 6] * k_vec[d + 6] +
+                         q_head[d + 7] * k_vec[d + 7];
             }
-            float prev = acc;
-            acc = (alpha * l * prev + weighted) / (l_new + 1e-12f);
+            for (; d < head_size; ++d)
+            {
+                score += q_head[d] * k_vec[d];
+            }
+
+            score *= scale;
+            scores[j] = score;
+            thread_max = fmaxf(thread_max, score);
         }
 
+        for (int offset = WAVE_SIZE / 2; offset > 0; offset >>= 1)
+        {
+            thread_max = fmaxf(thread_max, __shfl_down(thread_max, offset));
+        }
+        if (lane == 0)
+        {
+            scratch[wave_id] = thread_max;
+        }
+        __syncthreads();
+
+        if (wave_id == 0)
+        {
+            float tile_max = (lane < waves_per_block) ? scratch[lane] : -FLT_MAX;
+            for (int offset = WAVE_SIZE / 2; offset > 0; offset >>= 1)
+            {
+                tile_max = fmaxf(tile_max, __shfl_down(tile_max, offset));
+            }
+            if (lane == 0)
+            {
+                scratch[0] = tile_max;
+            }
+        }
+        __syncthreads();
+
+        const float tile_max = scratch[0];
+        const float m_new = fmaxf(m, tile_max);
+        const float alpha = (m == -FLT_MAX) ? 0.0f : expf(m - m_new);
+
+        float thread_sum = 0.0f;
+        for (int j = tid; j < tile_len; j += blockDim.x)
+        {
+            const float prob = expf(scores[j] - m_new);
+            scores[j] = prob;
+            thread_sum += prob;
+        }
+        for (int offset = WAVE_SIZE / 2; offset > 0; offset >>= 1)
+        {
+            thread_sum += __shfl_down(thread_sum, offset);
+        }
+        if (lane == 0)
+        {
+            scratch[wave_id] = thread_sum;
+        }
+        __syncthreads();
+
+        if (wave_id == 0)
+        {
+            float tile_sum = (lane < waves_per_block) ? scratch[lane] : 0.0f;
+            for (int offset = WAVE_SIZE / 2; offset > 0; offset >>= 1)
+            {
+                tile_sum += __shfl_down(tile_sum, offset);
+            }
+            if (lane == 0)
+            {
+                scratch[0] = tile_sum;
+            }
+        }
+        __syncthreads();
+        const float tile_sum = scratch[0];
+
+        if (head_size <= WAVE_SIZE)
+        {
+            float partial = 0.0f;
+            if (lane < head_size)
+            {
+                for (int j = wave_id; j < tile_len; j += waves_per_block)
+                {
+                    const int t = tile_start + j;
+                    partial += scores[j] * v_cache[t * num_kv_heads * head_size + kv_head * head_size + lane];
+                }
+            }
+            scratch[wave_id * WAVE_SIZE + lane] = partial;
+            __syncthreads();
+
+            if (wave_id == 0 && lane < head_size)
+            {
+                float tile_acc = 0.0f;
+                for (int w = 0; w < waves_per_block; ++w)
+                {
+                    tile_acc += scratch[w * WAVE_SIZE + lane];
+                }
+                acc = alpha * acc + tile_acc;
+            }
+        }
+        else
+        {
+            for (int d = tid; d < head_size; d += blockDim.x)
+            {
+                float tile_acc = 0.0f;
+                for (int j = 0; j < tile_len; ++j)
+                {
+                    const int t = tile_start + j;
+                    tile_acc += scores[j] * v_cache[t * num_kv_heads * head_size + kv_head * head_size + d];
+                }
+                out[h * head_size + d] = alpha * out[h * head_size + d] + tile_acc;
+            }
+        }
+
+        l = alpha * l + tile_sum;
         m = m_new;
-        l = l_new;
         __syncthreads();
     }
 
-    if (tid < head_size)
+    if (head_size <= WAVE_SIZE)
     {
-        out[h * head_size + tid] = acc;
+        if (wave_id == 0 && lane < head_size)
+        {
+            out[h * head_size + lane] = acc / (l + 1e-12f);
+        }
+    }
+    else
+    {
+        for (int d = tid; d < head_size; d += blockDim.x)
+            out[h * head_size + d] /= (l + 1e-12f);
     }
 }
 void GPU_Backend::flash_attention(
@@ -552,17 +625,14 @@ void GPU_Backend::flash_attention(
     hipStream_t stream)
 {
     hipStream_t useStream = stream ? stream : this->stream;
-    const int launch_threads = ((head_size + 63) / 64) * 64;
-    if (launch_threads > 1024)
+    const int launch_threads = 256;
+    if (head_size > 64)
     {
-        // 超出单个block线程上限时回退到classic路径
         classic_attention(q, k_cache, v_cache, output, scores, attn, seq_len, num_heads, num_kv_heads, head_size, useStream);
         return;
     }
 
-    // 标准FlashAttention核心思想：在线softmax + 不落地完整attention矩阵
-    // 每个block处理一个query head，通过m/l在线归一化累计输出
-    size_t shmem = (launch_threads + 64) * sizeof(float);
+    size_t shmem = (static_cast<size_t>(FLASH_TILE_N) + launch_threads) * sizeof(float);
     hipLaunchKernelGGL(flash_attention_online_kernel, dim3(num_heads), dim3(launch_threads), shmem, useStream,
                        q, k_cache, v_cache, output, seq_len, head_size, num_heads, num_kv_heads);
     HIP_CHECK(hipGetLastError());
@@ -710,5 +780,3 @@ void GPU_Backend::extract_qkv(
 
     HIP_CHECK(hipGetLastError());
 }
-    const int kv_group_size = num_heads / num_kv_heads;
-    const int kv_head_idx = head_idx / kv_group_size;
