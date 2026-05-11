@@ -31,6 +31,7 @@ public:
     ~GPU_Infer();
 
     void build(std::string modelPath, std::string tknzrPath, ModelType mt, BackendType bt);
+    void setAttentionKernel(const std::string &kernelName);
     std::tuple<std::string, int, long> generate(std::string prompt);
 };
 

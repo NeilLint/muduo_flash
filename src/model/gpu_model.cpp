@@ -7,8 +7,25 @@
 #include <cmath>
 #include <iostream>
 #include <fstream>
+#include <stdexcept>
 #include <fcntl.h>
 #include <sys/mman.h>
+
+static void validateAttentionConfig(const CModelConfig &cfg)
+{
+    if (cfg.numHeads <= 0 || cfg.numKvHeads <= 0)
+    {
+        throw std::runtime_error("invalid attention head config: numHeads and numKvHeads must be positive");
+    }
+    if (cfg.dim <= 0 || cfg.dim % cfg.numHeads != 0)
+    {
+        throw std::runtime_error("invalid model dim/head config: dim must be positive and divisible by numHeads");
+    }
+    if (cfg.numHeads % cfg.numKvHeads != 0)
+    {
+        throw std::runtime_error("invalid GQA config: numHeads must be divisible by numKvHeads");
+    }
+}
 
 GPU_Model::GPU_Model() : fd(-1), data(nullptr), fileSize(0)
 {
@@ -58,15 +75,11 @@ void GPU_Model::encode(CTokenizer *tokenizer, std::string text, int8_t bos, int8
 {
     if (text.empty())
     {
-        std::cerr << "[ERROR:] Text input is empty and cannot be processed.\n"
-                  << std::endl;
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("text input is empty and cannot be processed");
     }
     if (tokenizer == nullptr || tokens == nullptr || numTokens == nullptr)
     {
-        std::cerr << "[ERROR:] Invalid input arguments detected. Ensure tokenizer, tokens, and numTokens are properly initialized.\n"
-                  << std::endl;
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("invalid input arguments for encode");
     }
     if (tokenizer->vocabSortedList == nullptr)
     {
@@ -270,6 +283,7 @@ void GPU_Model::load(const std::string &checkpointPath, CModelConfig *modelConfi
 void GPU_Model::initializeModel(const std::string checkpointPath)
 {
     load(checkpointPath, &config, &fd, &data, &fileSize);
+    validateAttentionConfig(config);
     state.allocateGPUMemory(&config);
     transferWeightsToDevice();
     // 权重已完全传输到GPU，释放CPU内存映射
@@ -332,8 +346,8 @@ void GPU_Model::forward(int token, int pos, GPU_Backend *backend)
 
     float *inputVec = state->d_currentActivation;
     const int embeddingDim = config->dim;
-    const int kvDim = config->dim; // 当numKvHeads == numHeads时，kvDim就等于dim
-    const int headSize = embeddingDim / config->numHeads;
+    const int kvDim = config->kvDim();
+    const int headSize = config->headSize();
     const int ffnHiddenDim = config->feedForwardDim;
 
     // tokenEmbeddingTable 在GPU上，所以tokenEmbedding 在GPU上
@@ -359,17 +373,37 @@ void GPU_Model::forward(int token, int pos, GPU_Backend *backend)
 
         backend->ropeEncoding(state->d_q, state->d_k, headSize, pos, embeddingDim, kvDim, backend->getStream());
 
-        // 使用flash attention实现
-        backend->flash_attention(
-            state->d_q,                          // 查询向量
-            state->d_keyCache + kvCacheOffset,   // 键缓存
-            state->d_valueCache + kvCacheOffset, // 值缓存
-            state->d_branchActivation,           // 输出
-            state->d_scores,                     // 分数
-            state->d_attn,                       // 注意力权重
-            pos + 1,                             // 序列长度
-            backend->getStream()                 // 流
-        );
+        // 注意力执行策略：默认使用FlashAttention，可切换为经典实现
+        if (config->attentionKernel == CModelConfig::AttentionKernel::FLASH)
+        {
+            backend->flash_attention(
+                state->d_q,
+                state->d_keyCache + kvCacheOffset,
+                state->d_valueCache + kvCacheOffset,
+                state->d_branchActivation,
+                state->d_scores,
+                state->d_attn,
+                pos + 1,
+                config->numHeads,
+                config->numKvHeads,
+                headSize,
+                backend->getStream());
+        }
+        else
+        {
+            backend->classic_attention(
+                state->d_q,
+                state->d_keyCache + kvCacheOffset,
+                state->d_valueCache + kvCacheOffset,
+                state->d_branchActivation,
+                state->d_scores,
+                state->d_attn,
+                pos + 1,
+                config->numHeads,
+                config->numKvHeads,
+                headSize,
+                backend->getStream());
+        }
 
         // 使用融合算子替换matmul + axpy
         backend->matmul_axpy(

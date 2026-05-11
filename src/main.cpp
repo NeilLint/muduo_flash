@@ -5,11 +5,13 @@
 #include "./infer/gpu_infer.hpp"
 #include "util.hpp"
 #include <tuple>
+#include <stdexcept>
 std::string modelPath;
 std::string tknzrPath;
 
 ModelType mt;
 BackendType bt;
+std::string attentionKernel;
 std::vector<std::string> prompts;
 
 void parse(int argc, char *argv[])
@@ -18,8 +20,8 @@ void parse(int argc, char *argv[])
     if (argc <= 1 || argv[1] == nullptr || std::string(argv[1]).empty() ||
         argc <= 2 || argv[2] == nullptr || std::string(argv[2]).empty())
     {
-        std::cout << "Usage: muduo [model_path] [tokenizer_path] [prompt] [modelType] [backend]" << std::endl;
-        exit(1);
+        std::cout << "Usage: muduo [model_path] [tokenizer_path] [prompt] [modelType] [attentionKernel: flash|classic]" << std::endl;
+        throw std::runtime_error("invalid command line arguments");
     }
     modelPath = argv[1];
     tknzrPath = argv[2];
@@ -60,27 +62,13 @@ void parse(int argc, char *argv[])
         }
         else
         {
-            std::cout << "Unknown model type: " << modelTypeStr << std::endl;
+            throw std::runtime_error("unknown model type: " + modelTypeStr);
         }
     }
 
     if (argc > 5 && argv[5] != nullptr && std::string(argv[5]) != "")
     {
-        std::string backendStr = argv[5];
-        if (backendStr == "cpu")
-        {
-            bt = BackendType::CPU;
-        }
-        else if (backendStr == "gpu")
-        {
-            bt = BackendType::GPU;
-            std::cout << "[MSG:] Selected GPU backend" << std::endl;
-        }
-        else
-        {
-            std::cerr << "[ERROR:] Unsupported backend: " << backendStr << std::endl;
-            exit(1);
-        }
+        attentionKernel = argv[5];
     }
 }
 
@@ -89,7 +77,8 @@ void init()
     modelPath = "";
     tknzrPath = "";
     mt = ModelType::MODEL_LLAMA;
-    bt = BackendType::CPU;
+    bt = BackendType::GPU;
+    attentionKernel = "flash";
 }
 
 std::vector<std::string> loadResponses(const std::string &filename)
@@ -98,8 +87,7 @@ std::vector<std::string> loadResponses(const std::string &filename)
     std::vector<std::string> responses;
     if (!inFile.is_open())
     {
-        std::cerr << "[ERROR:] Can't open file " << filename << std::endl;
-        exit(1);
+        throw std::runtime_error("can't open file: " + filename);
     }
 
     std::string line, current;
@@ -129,12 +117,13 @@ std::vector<std::string> loadResponses(const std::string &filename)
 
 int main(int argc, char *argv[])
 {
-
-    init();
-    parse(argc, argv);
-    bt = BackendType::GPU;
-    GPU_Infer infer;
-    infer.build(modelPath, tknzrPath, mt, bt);
+    try
+    {
+        init();
+        parse(argc, argv);
+        GPU_Infer infer;
+        infer.build(modelPath, tknzrPath, mt, bt);
+        infer.setAttentionKernel(attentionKernel);
     int totalTokens = 0;
     long totalTimeMs = 0;
 
@@ -159,13 +148,20 @@ int main(int argc, char *argv[])
         totalTimeMs += timeMs;
     }
 
-    if (totalTimeMs > 0)
+        if (totalTimeMs > 0)
+        {
+            double avgThroughput = totalTokens / (totalTimeMs / 1000.0);
+            std::cout << "========== Summary ==========\n";
+            std::cout << "Total Samples: " << prompts.size() << "\n";
+            std::cout << "Total Tokens: " << totalTokens << "\n";
+            std::cout << "Total Time: " << totalTimeMs << " ms\n";
+            std::cout << "Average Throughput: " << avgThroughput << " tokens/s\n";
+        }
+        return 0;
+    }
+    catch (const std::exception &e)
     {
-        double avgThroughput = totalTokens / (totalTimeMs / 1000.0);
-        std::cout << "========== Summary ==========\n";
-        std::cout << "Total Samples: " << prompts.size() << "\n";
-        std::cout << "Total Tokens: " << totalTokens << "\n";
-        std::cout << "Total Time: " << totalTimeMs << " ms\n";
-        std::cout << "Average Throughput: " << avgThroughput << " tokens/s\n";
+        std::cerr << "[ERROR:] " << e.what() << std::endl;
+        return 1;
     }
 }

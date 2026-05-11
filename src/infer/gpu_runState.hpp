@@ -4,19 +4,7 @@
 #include "../model/modelConfig.hpp"
 #include "../infer/runState.hpp"
 #include <hip/hip_runtime.h>
-
-// 错误检查宏
-#define HIP_CHECK(cmd)                                                       \
-    do                                                                       \
-    {                                                                        \
-        hipError_t error = cmd;                                              \
-        if (error != hipSuccess)                                             \
-        {                                                                    \
-            std::cerr << "[ERROR:] HIP error " << hipGetErrorString(error)   \
-                      << " at " << __FILE__ << ":" << __LINE__ << std::endl; \
-            exit(EXIT_FAILURE);                                              \
-        }                                                                    \
-    } while (0)
+#include "../hip_utils.hpp"
 
 class GPU_RunState
 {

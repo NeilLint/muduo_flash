@@ -3,6 +3,7 @@
 #include <iostream>
 #include <chrono>
 #include <tuple>
+#include <stdexcept>
 
 #include "gpu_infer.hpp"
 #include "../model/gpu_transformer.hpp"
@@ -13,8 +14,10 @@ GPU_Infer::GPU_Infer()
 {
     this->mt = MODEL_LLAMA;
     this->bt = GPU;
-    this->model = NULL;
-    this->backend = NULL;
+    this->model = nullptr;
+    this->backend = nullptr;
+    this->tokenizer = nullptr;
+    this->sampler = nullptr;
 
     this->maxSeqLen = 256;
     this->temperature = 0.0; // 0.0：贪婪解码
@@ -25,14 +28,24 @@ GPU_Infer::GPU_Infer()
 
 GPU_Infer::~GPU_Infer()
 {
-    if (this->model != NULL)
+    if (this->model != nullptr)
     {
         delete this->model;
     }
 
-    if (this->backend != NULL)
+    if (this->backend != nullptr)
     {
         delete this->backend;
+    }
+
+    if (this->tokenizer != nullptr)
+    {
+        delete this->tokenizer;
+    }
+
+    if (this->sampler != nullptr)
+    {
+        delete this->sampler;
     }
 }
 
@@ -70,9 +83,7 @@ void GPU_Infer::build(std::string modelPath, std::string tknzrPath, ModelType mt
     }
     else
     {
-        std::cerr << "[ERROR:] Unsupported model type\n"
-                  << std::endl;
-        exit(1);
+        throw std::runtime_error("unsupported model type");
     }
 
     this->bt = bt;
@@ -83,13 +94,35 @@ void GPU_Infer::build(std::string modelPath, std::string tknzrPath, ModelType mt
     model->backend = backend;
     tokenizer->initializeTokenizer(tknzrPath, model->config.vocabSize);
     sampler->initializeSampler(model->config.vocabSize, temperature, topp, rngSeed);
+
+    model->config.attentionPattern = (model->config.numKvHeads == model->config.numHeads)
+                                        ? CModelConfig::AttentionPattern::MHA
+                                        : CModelConfig::AttentionPattern::GQA;
+}
+
+void GPU_Infer::setAttentionKernel(const std::string &kernelName)
+{
+    if (model == nullptr)
+    {
+        throw std::runtime_error("setAttentionKernel must be called after build()");
+    }
+    if (kernelName == "flash")
+    {
+        model->config.attentionKernel = CModelConfig::AttentionKernel::FLASH;
+    }
+    else if (kernelName == "classic")
+    {
+        model->config.attentionKernel = CModelConfig::AttentionKernel::CLASSIC;
+    }
+    else
+    {
+        throw std::runtime_error("unsupported attention kernel: " + kernelName);
+    }
 }
 
 std::tuple<std::string, int, long> GPU_Infer::generate(std::string prompt)
 {
     std::string result;
-    std::string emptyPrompt = "";
-
     int numPromptTokens = 0;
     int *promptTokens = new int[prompt.size() + 3]; // BOS, EOS, 和空终止符
 
@@ -97,9 +130,7 @@ std::tuple<std::string, int, long> GPU_Infer::generate(std::string prompt)
 
     if (numPromptTokens < 1)
     {
-        std::cerr << "[ERROR:] Something is wrong, expected at least 1 prompt token\n"
-                  << std::endl;
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("expected at least 1 prompt token");
     }
 
     long start = 0;
